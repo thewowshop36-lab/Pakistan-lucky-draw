@@ -1,0 +1,8 @@
+{
+  "name": "Pakistan Lottery",
+  "description": "Official Lucky Draw, Instant Scratch Cards, Grand Jackpots, and Live Results in Pakistani Rupees (PKR).",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
