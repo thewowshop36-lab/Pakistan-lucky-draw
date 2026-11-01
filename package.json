@@ -1,0 +1,19 @@
+{
+  "name": "pakistan-lottery",
+  "version": "1.0.0",
+  "description": "Pakistan Lottery - Official Lucky Draw & Gaming Platform (Vercel Ready)",
+  "scripts": {
+    "dev": "npx serve public",
+    "build": "mkdir -p public && echo 'Vercel static build completed successfully'",
+    "start": "npx serve public"
+  },
+  "keywords": [
+    "lottery",
+    "lucky-draw",
+    "pakistan",
+    "gaming",
+    "vercel"
+  ],
+  "author": "Pakistan Lottery Ltd",
+  "license": "ISC"
+}
