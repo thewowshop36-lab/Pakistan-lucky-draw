@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alpine.js -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
-  <!-- Google Fonts: Inter -->
+  <!-- Google Fonts: Inter / Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -45,21 +45,16 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .gold-border-glow {
-      border: 1px solid #F3C442;
-      box-shadow: 0 0 15px rgba(243, 196, 66, 0.2);
-    }
-    .scratch-canvas {
-      cursor: crosshair;
-      touch-action: none;
+    .carousel-fade-enter {
+      transition: opacity 0.8s ease-in-out;
     }
   </style>
 </head>
-<body x-data="lotteryApp()" class="min-h-screen flex flex-col selection:bg-goldPrimary selection:text-black">
+<body x-data="lotteryApp()" class="min-h-screen flex flex-col selection:bg-goldPrimary selection:text-black pb-16 md:pb-0">
 
   <!-- 18+ Age Verification Modal -->
   <div x-show="!is18Confirmed" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md" x-cloak>
-    <div class="bg-emeraldSurface border border-goldPrimary/60 rounded-2xl max-w-md w-full p-6 text-center shadow-2xl relative">
+    <div class="bg-emeraldSurface border border-goldPrimary/60 rounded-3xl max-w-md w-full p-6 text-center shadow-2xl relative">
       <div class="w-20 h-20 mx-auto rounded-full border-2 border-goldPrimary overflow-hidden mb-4 shadow-lg">
         <img src="/logo.jpg" alt="Pakistan Lottery" class="w-full h-full object-cover">
       </div>
@@ -67,15 +62,15 @@
         <span>⚠️ 18+ YEARS ONLY</span>
       </div>
       <h2 class="text-xl font-black text-goldPrimary mb-2" x-text="lang === 'EN' ? 'Age Verification & Terms' : 'عمر کی تصدیق اور شرائط'"></h2>
-      <p class="text-xs text-gray-300 leading-relaxed mb-6" x-text="lang === 'EN' ? 'Welcome to Pakistan Lottery (Official Lucky Draw Portal). You must be 18 years or older to participate in lucky draws, buy tickets, or play instant scratch games.' : 'پاکستان لاٹری میں خوش آمدید۔ قرعہ اندازی میں شرکت، ٹکٹ خریدنے یا سکریچ کارڈز کھیلنے کے لیے آپ کی عمر 18 سال یا اس سے زیادہ ہونی چاہیے۔'"></p>
+      <p class="text-xs text-gray-300 leading-relaxed mb-6" x-text="lang === 'EN' ? 'Welcome to Pakistan Lottery. In compliance with official responsible gaming standards, you must be 18 years or older to participate.' : 'پاکستان لاٹری میں خوش آمدید۔ قرعہ اندازی میں شرکت، ٹکٹ خریدنے یا کھیلنے کے لیے آپ کی عمر 18 سال یا اس سے زیادہ ہونی چاہیے۔'"></p>
       <button @click="confirmAge()" class="w-full py-3.5 bg-gradient-to-r from-goldBright via-goldPrimary to-goldDark text-black font-extrabold rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition">
-        <span x-text="lang === 'EN' ? 'I am 18 or Older — Enter Platform' : 'میری عمر 18 سال یا زیادہ ہے — داخل ہوں'"></span>
+        <span x-text="lang === 'EN' ? 'I am 18 or Older — Enter' : 'میری عمر 18 سال یا زیادہ ہے — داخل ہوں'"></span>
       </button>
     </div>
   </div>
 
   <!-- Top Header Navigation -->
-  <header class="border-b border-emeraldBorder bg-[#03140B]/90 sticky top-0 z-40 backdrop-blur-md">
+  <header class="border-b border-emeraldBorder bg-[#03140B]/95 sticky top-0 z-40 backdrop-blur-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
       <!-- Brand Logo -->
       <div class="flex items-center gap-3 cursor-pointer" @click="currentTab = 'home'">
@@ -84,11 +79,11 @@
         </div>
         <div>
           <h1 class="text-lg font-black tracking-wide gold-gradient-text" x-text="lang === 'EN' ? 'PAKISTAN LOTTERY' : 'پاکستان لاٹری'"></h1>
-          <p class="text-[10px] text-emerald-400 font-semibold" x-text="isAdmin ? '⚡ SUPER ADMIN CONSOLE' : (lang === 'EN' ? 'Official Lucky Draw Portal' : 'سرکاری لکی ڈرا پورٹل')"></p>
+          <p class="text-[10px] text-emerald-400 font-semibold" x-text="lang === 'EN' ? 'Official Lucky Draw Portal' : 'سرکاری لکی ڈرا پورٹل'"></p>
         </div>
       </div>
 
-      <!-- Action Items -->
+      <!-- Action Items: Language Toggle & Wallet Pill (No Admin Button for Regular Users) -->
       <div class="flex items-center gap-2.5 sm:gap-4">
         <!-- Language Switcher -->
         <button @click="toggleLang()" class="px-2.5 py-1 bg-emeraldSurfaceVar border border-emeraldBorder rounded-lg text-xs font-bold text-gray-200 hover:border-goldPrimary transition flex items-center gap-1">
@@ -96,8 +91,8 @@
           <span x-text="lang === 'EN' ? 'اردو' : 'English'"></span>
         </button>
 
-        <!-- Wallet Balance Pill -->
-        <div @click="currentTab = 'wallet'" class="cursor-pointer px-3 py-1 bg-emeraldSurfaceVar border border-goldPrimary/60 rounded-full flex items-center gap-2 hover:bg-emeraldSurface transition">
+        <!-- Wallet Balance Pill (Clicks to Me/Wallet) -->
+        <div @click="currentTab = 'me'" class="cursor-pointer px-3 py-1 bg-emeraldSurfaceVar border border-goldPrimary/60 rounded-full flex items-center gap-2 hover:bg-emeraldSurface transition">
           <span class="text-sm">🪙</span>
           <div class="text-left">
             <div class="text-[9px] text-gray-400 leading-none">Wallet</div>
@@ -105,61 +100,82 @@
           </div>
         </div>
 
-        <!-- Super Admin Mode Toggle -->
-        <button @click="toggleAdmin()" :class="isAdmin ? 'bg-red-900 border-red-500 text-white' : 'bg-emeraldSurfaceVar border-emeraldBorder text-gray-300'" class="px-2.5 py-1.5 border rounded-lg text-xs font-bold transition flex items-center gap-1.5">
-          <span>🛡️</span>
-          <span class="hidden sm:inline" x-text="isAdmin ? 'Exit Admin' : 'Admin'"></span>
+        <!-- Exit Admin Pill (Visible only if Admin is actively logged in) -->
+        <button x-show="isAdmin" @click="exitAdmin()" class="px-2.5 py-1 bg-red-900 border border-red-500 rounded-lg text-xs font-bold text-white flex items-center gap-1">
+          <span>✕</span> Exit Admin
         </button>
       </div>
     </div>
 
-    <!-- Navigation Tabs -->
-    <nav class="border-t border-emeraldBorder/50 bg-[#020D07]/90 px-4 overflow-x-auto">
-      <div class="max-w-7xl mx-auto flex items-center gap-2 sm:gap-6 text-xs sm:text-sm font-bold">
-        <button @click="currentTab = 'home'" :class="currentTab === 'home' ? 'text-goldBright border-b-2 border-goldPrimary' : 'text-gray-400 hover:text-gray-200'" class="py-2.5 px-2 transition whitespace-nowrap">Home</button>
-        <button @click="currentTab = 'play'" :class="currentTab === 'play' ? 'text-goldBright border-b-2 border-goldPrimary' : 'text-gray-400 hover:text-gray-200'" class="py-2.5 px-2 transition whitespace-nowrap">Play 6+1 Draw</button>
-        <button @click="currentTab = 'scratch'" :class="currentTab === 'scratch' ? 'text-goldBright border-b-2 border-goldPrimary' : 'text-gray-400 hover:text-gray-200'" class="py-2.5 px-2 transition whitespace-nowrap">Scratch Cards</button>
-        <button @click="currentTab = 'results'" :class="currentTab === 'results' ? 'text-goldBright border-b-2 border-goldPrimary' : 'text-gray-400 hover:text-gray-200'" class="py-2.5 px-2 transition whitespace-nowrap">Results & Winners</button>
-        <button @click="currentTab = 'wallet'" :class="currentTab === 'wallet' ? 'text-goldBright border-b-2 border-goldPrimary' : 'text-gray-400 hover:text-gray-200'" class="py-2.5 px-2 transition whitespace-nowrap">Wallet & Deposits</button>
-        <button @click="currentTab = 'rules'" :class="currentTab === 'rules' ? 'text-goldBright border-b-2 border-goldPrimary' : 'text-gray-400 hover:text-gray-200'" class="py-2.5 px-2 transition whitespace-nowrap">How to Play</button>
-        <button x-show="isAdmin" @click="currentTab = 'admin'" :class="currentTab === 'admin' ? 'text-red-400 border-b-2 border-red-500' : 'text-red-300 hover:text-red-200'" class="py-2.5 px-2 transition whitespace-nowrap font-black">⚙️ Admin Panel</button>
+    <!-- Top Tab Bar for Desktop (EXACTLY 4 OPTIONS) -->
+    <nav class="hidden md:block border-t border-emeraldBorder/50 bg-[#020D07]/90 px-4">
+      <div class="max-w-7xl mx-auto flex items-center gap-8 text-sm font-bold">
+        <button @click="currentTab = 'home'" :class="currentTab === 'home' ? 'text-goldBright border-b-2 border-goldPrimary' : 'text-gray-400 hover:text-gray-200'" class="py-3 px-2 transition whitespace-nowrap">
+          🏠 <span x-text="lang === 'EN' ? 'Home' : 'ہوم'"></span>
+        </button>
+        <button @click="currentTab = 'lottery'" :class="currentTab === 'lottery' ? 'text-goldBright border-b-2 border-goldPrimary' : 'text-gray-400 hover:text-gray-200'" class="py-3 px-2 transition whitespace-nowrap">
+          🎟️ <span x-text="lang === 'EN' ? 'Lottery' : 'لاٹری'"></span>
+        </button>
+        <button @click="currentTab = 'winners'" :class="currentTab === 'winners' ? 'text-goldBright border-b-2 border-goldPrimary' : 'text-gray-400 hover:text-gray-200'" class="py-3 px-2 transition whitespace-nowrap">
+          🏆 <span x-text="lang === 'EN' ? 'Winners' : 'فاتحین'"></span>
+        </button>
+        <button @click="currentTab = 'me'" :class="currentTab === 'me' ? 'text-goldBright border-b-2 border-goldPrimary' : 'text-gray-400 hover:text-gray-200'" class="py-3 px-2 transition whitespace-nowrap">
+          👤 <span x-text="lang === 'EN' ? 'Me (Account)' : 'می (اکاؤنٹ)'"></span>
+        </button>
       </div>
     </nav>
   </header>
 
   <!-- Live Marquee / Ticker -->
-  <div class="bg-gradient-to-r from-emerald-950 via-[#072414] to-emerald-950 border-b border-emeraldBorder/40 py-1.5 px-4 text-[11px] flex items-center justify-between">
-    <div class="max-w-7xl mx-auto w-full flex items-center gap-3 overflow-hidden whitespace-nowrap">
-      <span class="text-goldBright font-extrabold flex items-center gap-1">🏆 LATEST WINNER:</span>
-      <span class="text-gray-300">Ali Hamza (Lahore) won <b class="text-goldBright">Rs. 50,000,000</b> in Grand Bumper • Ticket: PKL-2026-78401</span>
-      <span class="hidden md:inline text-gray-500">•</span>
-      <span class="hidden md:inline text-emerald-400">100% Guaranteed Payouts via JazzCash, EasyPaisa & Bank</span>
+  <div class="bg-gradient-to-r from-emerald-950 via-[#072414] to-emerald-950 border-b border-emeraldBorder/40 py-1.5 px-4 text-[11px]">
+    <div class="max-w-7xl mx-auto w-full flex items-center justify-between overflow-hidden whitespace-nowrap">
+      <div class="flex items-center gap-3">
+        <span class="text-goldBright font-black flex items-center gap-1">🏆 RECENT WINNER:</span>
+        <span class="text-gray-300">Ali Hamza (Lahore) won <b class="text-goldBright">Rs. 50,000,000</b> • Ticket: PKL-2026-78401</span>
+        <span class="hidden md:inline text-gray-500">•</span>
+        <span class="hidden md:inline text-emerald-400">Guaranteed instant payouts via JazzCash, EasyPaisa & Bank</span>
+      </div>
+      <div class="hidden sm:block text-goldPrimary font-semibold">100% Transparent Lottery</div>
     </div>
   </div>
 
   <!-- Main Content Container -->
   <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">
 
-    <!-- TAB 1: HOME -->
+    <!-- ================= 1. HOME TAB ================= -->
     <div x-show="currentTab === 'home'" class="space-y-6">
-      <!-- Grand Hero Banner -->
+
+      <!-- Auto-sliding Moving Videos/Photos Carousel -->
       <div class="rounded-3xl border border-goldPrimary/50 bg-emeraldSurface overflow-hidden shadow-2xl relative">
-        <div class="relative h-64 sm:h-80 w-full overflow-hidden">
-          <img src="/banner.jpg" alt="Grand Jackpot" class="w-full h-full object-cover">
-          <div class="absolute inset-0 bg-gradient-to-t from-emeraldSurface via-emeraldSurface/40 to-transparent"></div>
+        <div class="relative h-64 sm:h-96 w-full overflow-hidden">
+          <template x-for="(b, idx) in banners" :key="idx">
+            <div x-show="currentBanner === idx" class="absolute inset-0 transition-opacity duration-700 ease-in-out">
+              <img :src="b.src" :alt="b.title" class="w-full h-full object-cover">
+              <div class="absolute inset-0 bg-gradient-to-t from-emeraldSurface via-emeraldSurface/30 to-transparent"></div>
+            </div>
+          </template>
+
           <div class="absolute top-4 left-4 bg-black/60 border border-goldPrimary text-goldBright text-[11px] font-bold px-3 py-1 rounded-full backdrop-blur-sm">
-            ⭐ OFFICIAL PAKISTAN GRAND BUMPER
+            ⭐ PAKISTAN OFFICIAL LOTTERY
+          </div>
+
+          <!-- Carousel Dots Indicator -->
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
+            <template x-for="(b, idx) in banners" :key="idx">
+              <button @click="currentBanner = idx" class="h-2 rounded-full transition-all"
+                      :class="currentBanner === idx ? 'w-8 bg-goldPrimary' : 'w-2 bg-white/50'"></button>
+            </template>
           </div>
         </div>
 
         <div class="p-6 sm:p-8 text-center -mt-16 sm:-mt-20 relative z-10">
-          <h2 class="text-2xl sm:text-3xl font-black text-white" x-text="activeDraws[0].title"></h2>
+          <h2 class="text-2xl sm:text-4xl font-black text-white" x-text="activeDraws[0].title"></h2>
           <div class="text-3xl sm:text-5xl font-black gold-gradient-text mt-2 tracking-tight">
             Rs. <span x-text="activeDraws[0].prizePoolPkr.toLocaleString()"></span>
           </div>
           <p class="text-xs sm:text-sm text-gray-300 font-medium mt-1">GUARANTEED 1ST PRIZE JACKPOT (PKR)</p>
 
-          <!-- Live Countdown Box -->
+          <!-- Live Countdown Timer -->
           <div class="my-6 inline-flex items-center gap-2 sm:gap-3 bg-black/60 border border-emeraldBorder p-3 rounded-2xl">
             <div class="text-center px-3 py-1.5 bg-[#071F13] border border-goldPrimary/30 rounded-xl min-w-[55px]">
               <div class="text-lg sm:text-xl font-black text-goldBright" x-text="timer.days"></div>
@@ -183,21 +199,59 @@
           </div>
 
           <div>
-            <button @click="currentTab = 'play'" class="px-8 py-4 bg-gradient-to-r from-goldBright via-goldPrimary to-goldDark text-black text-base font-black rounded-xl shadow-xl hover:scale-105 transition">
-              🎟️ Pick Numbers & Enter (Rs. 1,000)
+            <button @click="openLotteryDraw(activeDraws[0])" class="px-8 py-4 bg-gradient-to-r from-goldBright via-goldPrimary to-goldDark text-black text-base font-black rounded-xl shadow-xl hover:scale-105 transition">
+              🎟️ Pick Numbers & Enter Draw (Rs. 1,000)
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Active Draws Grid -->
+      <!-- Live Rolling / Running Numbers Ticker Box -->
+      <div class="bg-[#062215] border border-goldPrimary/80 rounded-2xl p-5 shadow-lg">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl animate-pulse">🔥</span>
+              <h3 class="text-xs font-black text-goldBright tracking-widest uppercase">
+                <span x-text="lang === 'EN' ? 'LIVE ROLLING GRAND POT (PKR)' : 'لائیو چلتا ہوا گرینڈ جیک پاٹ'"></span>
+              </h3>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-goldBright mt-1">
+              Rs. <span x-text="rollingPotPkr.toLocaleString()"></span>
+            </div>
+            <div class="text-[11px] text-emerald-400 mt-0.5">
+              ● Live Tickets Entered: <b x-text="liveTicketsCount.toLocaleString()"></b>
+            </div>
+          </div>
+
+          <!-- Rolling Live Numbers Balls -->
+          <div class="flex flex-col items-center sm:items-end">
+            <span class="text-[10px] text-gray-400 font-bold mb-1">LATEST ROLLING BALL COMBINATION:</span>
+            <div class="flex items-center gap-2">
+              <template x-for="num in [7, 14, 21, 22, 29, 30]" :key="num">
+                <div class="w-8 h-8 rounded-full bg-goldPrimary text-black font-black text-xs flex items-center justify-center shadow-md">
+                  <span x-text="String(num).padStart(2, '0')"></span>
+                </div>
+              </template>
+              <span class="text-goldPrimary font-black text-base">+</span>
+              <div class="w-8 h-8 rounded-full bg-red-600 text-white font-black text-xs flex items-center justify-center shadow-md">
+                <span>M03</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Lotteries Quick Carousel -->
       <div>
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-black text-goldBright flex items-center gap-2">
-            <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping"></span>
-            ACTIVE LUCKY DRAWS
+            <span>🎟️</span>
+            <span x-text="lang === 'EN' ? 'ACTIVE LOTTERY DRAWS' : 'فعال لاٹریز'"></span>
           </h3>
-          <span class="text-xs text-gray-400">Official Government Licensed</span>
+          <button @click="currentTab = 'lottery'" class="text-xs text-goldPrimary font-bold hover:underline">
+            View All Lotteries →
+          </button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -206,11 +260,11 @@
               <div>
                 <div class="flex items-center justify-between text-[11px] font-bold text-goldPrimary mb-2">
                   <span class="bg-[#0C2B1C] border border-goldPrimary/30 px-2 py-0.5 rounded" x-text="draw.badge"></span>
-                  <span class="text-emerald-400 flex items-center gap-1">● LIVE</span>
+                  <span class="text-emerald-400">● LIVE</span>
                 </div>
                 <h4 class="font-extrabold text-white text-base" x-text="draw.title"></h4>
                 <div class="mt-2 text-xl font-black text-goldBright">Rs. <span x-text="draw.prizePoolPkr.toLocaleString()"></span></div>
-                <div class="text-xs text-gray-400">Total Prize Pool (PKR)</div>
+                <div class="text-xs text-gray-400">Prize Pool in PKR</div>
               </div>
 
               <div class="mt-5 pt-4 border-t border-emeraldBorder/40 flex items-center justify-between">
@@ -218,7 +272,7 @@
                   <div class="text-[10px] text-gray-400">TICKET COST</div>
                   <div class="text-sm font-black text-white">Rs. <span x-text="draw.ticketPricePkr.toLocaleString()"></span></div>
                 </div>
-                <button @click="selectDrawForPlay(draw)" class="px-4 py-2 bg-goldPrimary text-black text-xs font-bold rounded-lg hover:brightness-110">
+                <button @click="openLotteryDraw(draw)" class="px-4 py-2 bg-goldPrimary text-black text-xs font-bold rounded-lg hover:brightness-110">
                   Play Draw
                 </button>
               </div>
@@ -227,198 +281,170 @@
         </div>
       </div>
 
-      <!-- Instant Scratch Games Teaser -->
-      <div class="bg-gradient-to-r from-emeraldSurface via-[#103321] to-emeraldSurface border border-goldPrimary/40 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <div class="w-14 h-14 bg-emeraldSurfaceVar border border-goldPrimary rounded-2xl flex items-center justify-center text-3xl">
-            🎰
-          </div>
-          <div>
-            <h4 class="text-lg font-black text-white">Instant Win Digital Scratch Cards</h4>
-            <p class="text-xs text-gray-300">Play Green Crescent 777, Golden Markhor & K2 Super Fortune • Win up to Rs. 5,000,000 instantly!</p>
-          </div>
-        </div>
-        <button @click="currentTab = 'scratch'" class="px-6 py-3 bg-goldPrimary text-black font-extrabold text-xs rounded-xl shadow-lg hover:brightness-110 whitespace-nowrap">
-          Play Scratch Cards →
-        </button>
-      </div>
-    </div>
-
-    <!-- TAB 2: PLAY 6+1 DRAW -->
-    <div x-show="currentTab === 'play'" class="space-y-6" x-cloak>
-      <div class="bg-emeraldSurface border border-goldPrimary/40 rounded-2xl p-6 text-center">
-        <span class="text-xs font-bold text-goldPrimary bg-emeraldSurfaceVar px-3 py-1 rounded-full border border-emeraldBorder" x-text="selectedDraw.badge"></span>
-        <h2 class="text-2xl font-black text-white mt-2" x-text="selectedDraw.title"></h2>
-        <div class="text-3xl font-black gold-gradient-text mt-1">Rs. <span x-text="selectedDraw.prizePoolPkr.toLocaleString()"></span></div>
-        <p class="text-xs text-gray-300 mt-1">Grand Jackpot Pool • UAE Lottery 6+1 Formula</p>
-
-        <!-- Selected balls display -->
-        <div class="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3 bg-[#05180E] border border-emeraldBorder p-3 rounded-2xl max-w-lg mx-auto">
-          <template x-for="i in 6" :key="i">
-            <div class="w-10 h-10 rounded-full flex items-center justify-center font-black text-sm border transition"
-                 :class="selectedDays[i-1] ? 'bg-goldPrimary text-black border-goldBright shadow-lg' : 'bg-emeraldDark text-gray-500 border-emeraldBorder'">
-              <span x-text="selectedDays[i-1] ? String(selectedDays[i-1]).padStart(2, '0') : 'D' + i"></span>
-            </div>
-          </template>
-          <span class="text-goldPrimary font-black text-lg">+</span>
-          <div class="w-10 h-10 rounded-full flex items-center justify-center font-black text-sm border transition"
-               :class="selectedMonth ? 'bg-red-600 text-white border-red-400 shadow-lg' : 'bg-[#260e12] text-gray-500 border-red-900/60'">
-            <span x-text="selectedMonth ? 'M' + selectedMonth : 'M'"></span>
-          </div>
-        </div>
-
-        <div class="mt-4 flex items-center justify-center gap-3">
-          <button @click="quickPick()" class="px-4 py-2 bg-emeraldSurfaceVar border border-goldPrimary text-goldBright font-bold text-xs rounded-xl hover:bg-emeraldSurface transition flex items-center gap-1.5">
-            <span>✨</span> Quick Pick (Auto Random)
-          </button>
-          <button @click="clearSelection()" class="px-4 py-2 border border-red-800 text-red-400 font-bold text-xs rounded-xl hover:bg-red-950/40 transition">
-            Clear
-          </button>
-        </div>
-      </div>
-
-      <!-- Step 1: 31 Days Grid -->
-      <div class="bg-emeraldSurface border border-emeraldBorder rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="font-extrabold text-goldPrimary text-base">Step 1: Pick 6 Days (1 to 31)</h3>
-            <p class="text-xs text-gray-400">Select any 6 lucky dates</p>
-          </div>
-          <span class="text-xs font-bold px-2.5 py-1 rounded-full"
-                :class="selectedDays.length === 6 ? 'bg-emerald-900 text-emerald-300' : 'bg-gray-800 text-gray-400'">
-            <span x-text="selectedDays.length"></span>/6 Selected
-          </span>
-        </div>
-
-        <div class="grid grid-cols-7 sm:grid-cols-11 gap-2 sm:gap-3">
-          <template x-for="day in 31" :key="day">
-            <button @click="toggleDay(day)"
-                    :class="selectedDays.includes(day) ? 'bg-goldPrimary text-black border-goldBright scale-105 shadow-md font-black' : 'bg-[#062013] text-gray-200 border-emeraldBorder hover:border-goldPrimary font-semibold'"
-                    class="h-10 rounded-xl border flex items-center justify-center text-sm transition active:scale-95">
-              <span x-text="String(day).padStart(2, '0')"></span>
-            </button>
-          </template>
-        </div>
-      </div>
-
-      <!-- Step 2: 12 Months Grid -->
-      <div class="bg-emeraldSurface border border-emeraldBorder rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="font-extrabold text-red-400 text-base">Step 2: Pick 1 Lucky Month (1 to 12)</h3>
-            <p class="text-xs text-gray-400">The crucial month multiplier ball</p>
-          </div>
-          <span class="text-xs font-bold px-2.5 py-1 rounded-full"
-                :class="selectedMonth ? 'bg-red-900 text-red-200' : 'bg-gray-800 text-gray-400'">
-            <span x-text="selectedMonth ? 'Month ' + selectedMonth : 'None'"></span>
-          </span>
-        </div>
-
-        <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 sm:gap-3">
-          <template x-for="month in 12" :key="month">
-            <button @click="selectedMonth = (selectedMonth === month ? null : month)"
-                    :class="selectedMonth === month ? 'bg-red-600 text-white border-red-300 scale-105 shadow-lg font-black' : 'bg-[#21090d] text-red-200 border-red-900/60 hover:border-red-500 font-semibold'"
-                    class="h-10 rounded-xl border flex items-center justify-center text-sm transition active:scale-95">
-              <span x-text="'M ' + month"></span>
-            </button>
-          </template>
-        </div>
-      </div>
-
-      <!-- Purchase Bar -->
-      <div class="bg-emeraldSurface border border-goldPrimary/60 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <!-- Guarantee & Details Banner -->
+      <div class="p-4 bg-[#05170E] border border-emeraldBorder/60 rounded-2xl flex items-center gap-3 text-xs">
+        <span class="text-2xl">🛡️</span>
         <div>
-          <div class="text-xs text-gray-400">TICKET SUMMARY</div>
-          <div class="text-lg font-black text-white">
-            1 Line • Total: <span class="text-goldBright">Rs. <span x-text="selectedDraw.ticketPricePkr.toLocaleString()"></span></span>
-          </div>
-          <div class="text-xs text-emerald-400 mt-0.5">Wallet Balance: Rs. <span x-text="walletBalance.toLocaleString()"></span></div>
+          <div class="font-black text-emerald-400">100% VERIFIED MANUAL DRAW & GUARANTEED PAYOUTS</div>
+          <div class="text-gray-400 text-[11px]">All draws are officially supervised. Winnings are credited immediately in Pakistani Rupees (PKR) and withdrawable to JazzCash, EasyPaisa, or any Pakistani Bank Account.</div>
         </div>
-
-        <button @click="buyTicket()" :disabled="selectedDays.length !== 6 || !selectedMonth || walletBalance < selectedDraw.ticketPricePkr"
-                class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-goldBright to-goldPrimary disabled:from-gray-800 disabled:to-gray-700 disabled:text-gray-500 text-black font-black text-sm rounded-xl shadow-xl transition">
-          Confirm & Buy Ticket
-        </button>
       </div>
     </div>
 
-    <!-- TAB 3: SCRATCH CARDS -->
-    <div x-show="currentTab === 'scratch'" class="space-y-6" x-cloak>
-      <div>
-        <h2 class="text-2xl font-black text-goldPrimary">Instant Win Digital Scratch Cards</h2>
-        <p class="text-xs text-gray-300">Choose a game, scratch off the foil, and match 3 symbols to win instant PKR cash!</p>
+    <!-- ================= 2. LOTTERY TAB ================= -->
+    <div x-show="currentTab === 'lottery'" class="space-y-6" x-cloak>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 class="text-2xl font-black text-goldPrimary" x-text="lang === 'EN' ? 'Official Lotteries & Games' : 'سرکاری لاٹریز اور گیمز'"></h2>
+          <p class="text-xs text-gray-300">Choose from Grand Bumper draws, Daily Super 7, or instant win scratch cards.</p>
+        </div>
+
+        <!-- Sub-tabs within Lottery: 6+1 Draws or Scratch Games -->
+        <div class="flex items-center gap-2 bg-emeraldSurfaceVar border border-emeraldBorder p-1 rounded-xl">
+          <button @click="lotterySubTab = 'draws'" :class="lotterySubTab === 'draws' ? 'bg-goldPrimary text-black font-black' : 'text-gray-400 font-bold'" class="px-4 py-1.5 rounded-lg text-xs transition">
+            6+1 Lucky Draws
+          </button>
+          <button @click="lotterySubTab = 'scratch'" :class="lotterySubTab === 'scratch' ? 'bg-goldPrimary text-black font-black' : 'text-gray-400 font-bold'" class="px-4 py-1.5 rounded-lg text-xs transition">
+            Scratch Cards
+          </button>
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <template x-for="card in scratchCards" :key="card.id">
-          <div class="bg-emeraldSurface border border-emeraldBorder rounded-2xl p-5 hover:border-goldPrimary/60 transition flex flex-col justify-between">
-            <div>
-              <div class="w-14 h-14 mx-auto rounded-2xl bg-emeraldSurfaceVar border border-goldPrimary flex items-center justify-center text-3xl mb-3 shadow-md" x-text="card.icon"></div>
-              <h3 class="font-black text-white text-base text-center" x-text="card.title"></h3>
-              <p class="text-center text-[11px] text-gray-400" x-text="card.subtitle"></p>
-              <div class="mt-4 p-2 bg-[#05180E] rounded-xl text-center border border-emeraldBorder/60">
-                <div class="text-[10px] text-gray-400">TOP PRIZE</div>
-                <div class="text-base font-black text-goldBright">Rs. <span x-text="card.maxPrize.toLocaleString()"></span></div>
-              </div>
-            </div>
-
-            <div class="mt-5 pt-4 border-t border-emeraldBorder/40 flex items-center justify-between">
-              <div>
-                <div class="text-[9px] text-gray-400">COST</div>
-                <div class="text-xs font-black text-white">Rs. <span x-text="card.price.toLocaleString()"></span></div>
-              </div>
-              <button @click="openScratchGame(card)" :disabled="walletBalance < card.price" class="px-4 py-2 bg-goldPrimary disabled:bg-gray-800 text-black disabled:text-gray-500 font-extrabold text-xs rounded-lg hover:brightness-110">
-                Play Card
-              </button>
-            </div>
-          </div>
-        </template>
-      </div>
-
-      <!-- Interactive Scratch Modal -->
-      <div x-show="activeScratchCard" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md" x-cloak>
-        <div class="bg-emeraldSurface border border-goldPrimary rounded-3xl max-w-md w-full p-6 text-center relative shadow-2xl">
-          <button @click="activeScratchCard = null" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl">✕</button>
-
-          <h3 class="text-xl font-black text-goldBright" x-text="activeScratchCard?.title"></h3>
-          <p class="text-xs text-gray-300">Cost: Rs. <span x-text="activeScratchCard?.price"></span> • Scratch to reveal 3 matching symbols</p>
-
-          <!-- 3x3 Scratch Tiles -->
-          <div class="grid grid-cols-3 gap-2.5 my-6 bg-[#04150C] p-4 rounded-2xl border border-goldPrimary/40">
-            <template x-for="(tile, idx) in scratchGrid" :key="idx">
-              <div @click="scratchTile(idx)"
-                   class="h-20 rounded-xl flex items-center justify-center text-3xl font-black cursor-pointer border transition"
-                   :class="tile.revealed ? 'bg-[#0E3620] border-goldPrimary text-white shadow-inner' : 'bg-gradient-to-br from-gray-400 to-gray-600 border-gray-300 text-gray-900 shadow-md'">
-                <span x-show="tile.revealed" x-text="tile.symbol"></span>
-                <span x-show="!tile.revealed" class="text-xs font-black opacity-60">🪙 TAP</span>
+      <!-- Sub-section: 6+1 Lucky Draws -->
+      <div x-show="lotterySubTab === 'draws'" class="space-y-6">
+        <!-- Choose Lottery Pills -->
+        <div>
+          <label class="text-[11px] font-bold text-gray-400">SELECT LOTTERY:</label>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+            <template x-for="draw in activeDraws" :key="draw.id">
+              <div @click="selectedDraw = draw" class="cursor-pointer p-4 rounded-xl border transition"
+                   :class="selectedDraw.id === draw.id ? 'bg-[#103823] border-goldPrimary shadow-md' : 'bg-emeraldSurface border-emeraldBorder hover:border-goldPrimary/40'">
+                <div class="text-[10px] font-bold text-goldPrimary" x-text="draw.badge"></div>
+                <div class="font-extrabold text-sm text-white mt-0.5" x-text="draw.title"></div>
+                <div class="text-base font-black text-goldBright mt-1">Rs. <span x-text="draw.prizePoolPkr.toLocaleString()"></span></div>
+                <div class="text-[10px] text-gray-400">Rs. <span x-text="draw.ticketPricePkr.toLocaleString()"></span> / entry</div>
               </div>
             </template>
           </div>
+        </div>
 
-          <div x-show="scratchWon" class="mb-4 p-3 bg-emerald-950 border border-emerald-400 rounded-xl text-emerald-200 text-sm font-black">
-            🎉 CONGRATULATIONS! You won Rs. <span x-text="scratchPrize.toLocaleString()"></span>! Credited to your wallet.
-          </div>
-          <div x-show="scratchRevealedAll && !scratchWon" class="mb-4 p-3 bg-red-950 border border-red-500 rounded-xl text-red-200 text-xs font-bold">
-            No 3 matches this time. Better luck next scratch!
+        <!-- 6+1 Interactive Number Selection -->
+        <div class="bg-emeraldSurface border border-goldPrimary/50 rounded-2xl p-6">
+          <div class="text-center mb-6">
+            <h3 class="text-xl font-black text-white" x-text="selectedDraw.title"></h3>
+            <div class="text-2xl font-black gold-gradient-text mt-1">Rs. <span x-text="selectedDraw.prizePoolPkr.toLocaleString()"></span></div>
+            <p class="text-xs text-gray-300 mt-0.5">UAE Lottery 6+1 Formula • Select 6 Days (1-31) and 1 Month (1-12)</p>
+
+            <!-- Balls Display -->
+            <div class="mt-4 flex flex-wrap items-center justify-center gap-2 bg-[#05180E] border border-emeraldBorder p-3 rounded-2xl max-w-md mx-auto">
+              <template x-for="i in 6" :key="i">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center font-black text-sm border transition"
+                     :class="selectedDays[i-1] ? 'bg-goldPrimary text-black border-goldBright shadow-md' : 'bg-emeraldDark text-gray-500 border-emeraldBorder'">
+                  <span x-text="selectedDays[i-1] ? String(selectedDays[i-1]).padStart(2, '0') : 'D' + i"></span>
+                </div>
+              </template>
+              <span class="text-goldPrimary font-black text-lg">+</span>
+              <div class="w-10 h-10 rounded-full flex items-center justify-center font-black text-sm border transition"
+                   :class="selectedMonth ? 'bg-red-600 text-white border-red-400 shadow-md' : 'bg-[#260e12] text-gray-500 border-red-900/60'">
+                <span x-text="selectedMonth ? 'M' + selectedMonth : 'M'"></span>
+              </div>
+            </div>
+
+            <div class="mt-3 flex items-center justify-center gap-3">
+              <button @click="quickPick()" class="px-4 py-2 bg-emeraldSurfaceVar border border-goldPrimary text-goldBright font-bold text-xs rounded-xl hover:bg-emeraldSurface transition flex items-center gap-1.5">
+                <span>✨</span> Quick Pick
+              </button>
+              <button @click="clearSelection()" class="px-4 py-2 border border-red-800 text-red-400 font-bold text-xs rounded-xl hover:bg-red-950/40 transition">
+                Clear
+              </button>
+            </div>
           </div>
 
-          <div class="flex gap-2">
-            <button @click="revealAllScratch()" class="flex-1 py-3 bg-emeraldSurfaceVar border border-goldPrimary text-goldBright font-bold text-xs rounded-xl">
-              Reveal All
-            </button>
-            <button @click="activeScratchCard = null" class="flex-1 py-3 bg-goldPrimary text-black font-extrabold text-xs rounded-xl">
-              Done
+          <!-- Step 1: 31 Days Grid -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-extrabold text-goldPrimary text-sm">Step 1: Pick 6 Days (1 to 31)</h4>
+              <span class="text-xs font-bold text-emerald-400"><span x-text="selectedDays.length"></span>/6 Chosen</span>
+            </div>
+            <div class="grid grid-cols-7 sm:grid-cols-11 gap-2">
+              <template x-for="day in 31" :key="day">
+                <button @click="toggleDay(day)"
+                        :class="selectedDays.includes(day) ? 'bg-goldPrimary text-black border-goldBright scale-105 shadow-md font-black' : 'bg-[#062013] text-gray-200 border-emeraldBorder hover:border-goldPrimary font-semibold'"
+                        class="h-10 rounded-xl border flex items-center justify-center text-sm transition">
+                  <span x-text="String(day).padStart(2, '0')"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- Step 2: 12 Months Grid -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-extrabold text-red-400 text-sm">Step 2: Pick 1 Lucky Month (1 to 12)</h4>
+              <span class="text-xs font-bold text-red-300" x-text="selectedMonth ? 'Month ' + selectedMonth : 'Choose 1'"></span>
+            </div>
+            <div class="grid grid-cols-4 sm:grid-cols-6 gap-2">
+              <template x-for="month in 12" :key="month">
+                <button @click="selectedMonth = (selectedMonth === month ? null : month)"
+                        :class="selectedMonth === month ? 'bg-red-600 text-white border-red-300 scale-105 shadow-lg font-black' : 'bg-[#21090d] text-red-200 border-red-900/60 hover:border-red-500 font-semibold'"
+                        class="h-10 rounded-xl border flex items-center justify-center text-sm transition">
+                  <span x-text="'M ' + month"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- Buy Ticket CTA -->
+          <div class="pt-4 border-t border-emeraldBorder flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <div class="text-xs text-gray-400">Total Price:</div>
+              <div class="text-xl font-black text-goldBright">Rs. <span x-text="selectedDraw.ticketPricePkr.toLocaleString()"></span></div>
+              <div class="text-[11px] text-emerald-400">Wallet Balance: Rs. <span x-text="walletBalance.toLocaleString()"></span></div>
+            </div>
+
+            <button @click="buyTicket()" :disabled="selectedDays.length !== 6 || !selectedMonth || walletBalance < selectedDraw.ticketPricePkr"
+                    class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-goldBright to-goldPrimary disabled:from-gray-800 disabled:to-gray-700 disabled:text-gray-500 text-black font-black text-sm rounded-xl shadow-xl transition">
+              Confirm & Buy Ticket
             </button>
           </div>
         </div>
       </div>
+
+      <!-- Sub-section: Instant Scratch Cards -->
+      <div x-show="lotterySubTab === 'scratch'" class="space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <template x-for="card in scratchCards" :key="card.id">
+            <div class="bg-emeraldSurface border border-emeraldBorder rounded-2xl p-5 hover:border-goldPrimary/60 transition flex flex-col justify-between">
+              <div>
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-emeraldSurfaceVar border border-goldPrimary flex items-center justify-center text-3xl mb-3 shadow-md" x-text="card.icon"></div>
+                <h3 class="font-black text-white text-base text-center" x-text="card.title"></h3>
+                <p class="text-center text-[11px] text-gray-400" x-text="card.subtitle"></p>
+                <div class="mt-4 p-2 bg-[#05180E] rounded-xl text-center border border-emeraldBorder/60">
+                  <div class="text-[10px] text-gray-400">TOP PRIZE</div>
+                  <div class="text-base font-black text-goldBright">Rs. <span x-text="card.maxPrize.toLocaleString()"></span></div>
+                </div>
+              </div>
+
+              <div class="mt-5 pt-4 border-t border-emeraldBorder/40 flex items-center justify-between">
+                <div>
+                  <div class="text-[9px] text-gray-400">COST</div>
+                  <div class="text-xs font-black text-white">Rs. <span x-text="card.price.toLocaleString()"></span></div>
+                </div>
+                <button @click="openScratchGame(card)" :disabled="walletBalance < card.price" class="px-4 py-2 bg-goldPrimary disabled:bg-gray-800 text-black disabled:text-gray-500 font-extrabold text-xs rounded-lg hover:brightness-110">
+                  Play Card
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
     </div>
 
-    <!-- TAB 4: RESULTS & WINNERS -->
-    <div x-show="currentTab === 'results'" class="space-y-6" x-cloak>
+    <!-- ================= 3. WINNERS TAB ================= -->
+    <div x-show="currentTab === 'winners'" class="space-y-6" x-cloak>
       <div>
-        <h2 class="text-2xl font-black text-goldPrimary">Official Results & Winners Archive</h2>
-        <p class="text-xs text-gray-300">Transparent lottery results guaranteed by the official commission in Pakistani Rupees.</p>
+        <h2 class="text-2xl font-black text-goldPrimary" x-text="lang === 'EN' ? 'Past Winners & Official Results' : 'پچھلی لاٹریز اور فاتحین'"></h2>
+        <p class="text-xs text-gray-300">All past draw results, winning ball combinations, and verified winners list.</p>
       </div>
 
       <!-- Ticket Verifier Bar -->
@@ -481,135 +507,136 @@
       </div>
     </div>
 
-    <!-- TAB 5: WALLET & DEPOSITS -->
-    <div x-show="currentTab === 'wallet'" class="space-y-6" x-cloak>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Balance Card -->
-        <div class="md:col-span-1 bg-emeraldSurface border border-goldPrimary/60 rounded-2xl p-6 text-center flex flex-col justify-between">
-          <div>
-            <div class="text-xs text-gray-400 font-bold">OFFICIAL LOTTERY WALLET</div>
-            <div class="text-3xl font-black text-goldBright mt-2">Rs. <span x-text="walletBalance.toLocaleString()"></span></div>
-            <p class="text-xs text-gray-300 mt-1">Available balance for tickets & scratch</p>
-          </div>
-          <div class="mt-6 flex flex-col gap-2">
-            <button @click="openDepositModal()" class="w-full py-2.5 bg-goldPrimary text-black font-extrabold text-xs rounded-xl shadow-md hover:brightness-110">
-              + Top-up Deposit PKR
-            </button>
-            <button @click="openWithdrawModal()" class="w-full py-2.5 bg-emeraldSurfaceVar border border-emeraldBorder text-white font-bold text-xs rounded-xl hover:border-goldPrimary">
-              Withdraw to JazzCash/EasyPaisa
-            </button>
-          </div>
-        </div>
+    <!-- ================= 4. ME (ACCOUNT & WALLET) TAB ================= -->
+    <div x-show="currentTab === 'me'" class="space-y-6" x-cloak>
+      <div>
+        <h2 class="text-2xl font-black text-goldPrimary" x-text="lang === 'EN' ? 'My Profile & Wallet' : 'میرا پروفائل اور والیٹ'"></h2>
+        <p class="text-xs text-gray-300">View your wallet balance, deposit via JazzCash/EasyPaisa, view your tickets and transaction logs.</p>
+      </div>
 
-        <!-- Local Pakistani Payment Methods info -->
-        <div class="md:col-span-2 bg-emeraldSurface border border-emeraldBorder rounded-2xl p-6">
-          <h3 class="font-black text-white text-base mb-3">Pakistan Local Payment Gateways</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div class="p-4 bg-[#071F13] border border-red-500/30 rounded-xl">
-              <div class="text-xs font-bold text-red-400">JazzCash</div>
-              <div class="text-xs text-gray-300 mt-1 font-mono">0300-8889911</div>
-              <div class="text-[10px] text-gray-400 mt-0.5">Acc: Pakistan Lottery</div>
-            </div>
-            <div class="p-4 bg-[#071F13] border border-green-500/30 rounded-xl">
-              <div class="text-xs font-bold text-emerald-400">EasyPaisa</div>
-              <div class="text-xs text-gray-300 mt-1 font-mono">0345-7776655</div>
-              <div class="text-[10px] text-gray-400 mt-0.5">Acc: Pakistan Lottery</div>
-            </div>
-            <div class="p-4 bg-[#071F13] border border-blue-500/30 rounded-xl">
-              <div class="text-xs font-bold text-blue-400">Meezan Bank</div>
-              <div class="text-[11px] text-gray-300 mt-1 font-mono break-all">PK55MEZN0001928374829102</div>
-              <div class="text-[10px] text-gray-400 mt-0.5">Title: Pakistan Lottery Ltd</div>
-            </div>
+      <!-- User Profile Card -->
+      <div class="bg-emeraldSurface border border-emeraldBorder rounded-2xl p-5 flex items-center gap-4">
+        <div class="w-16 h-16 rounded-full bg-emeraldSurfaceVar border-2 border-goldPrimary flex items-center justify-center text-3xl">
+          👤
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2">
+            <h3 class="text-lg font-black text-white">Muhammad Zeeshan</h3>
+            <span class="text-[9px] bg-emerald-950 text-emerald-400 border border-emerald-500/50 px-2 py-0.5 rounded font-bold">VERIFIED</span>
           </div>
-          <p class="text-xs text-gray-400 mt-4 leading-relaxed">
-            Send money to any of the merchant accounts above, then tap <b>Top-up Deposit</b> and enter your transaction ID (TID) to have your balance credited instantly.
-          </p>
+          <div class="text-xs text-gray-300 mt-0.5">+92 300 7861122</div>
+          <div class="text-[10px] text-gray-400">Player ID: PKL-USR-7862</div>
         </div>
       </div>
 
-      <!-- Transaction History Table -->
-      <div class="bg-emeraldSurface border border-emeraldBorder rounded-2xl p-6">
-        <h3 class="font-black text-white text-base mb-4">Transaction History</h3>
+      <!-- Wallet Balance Card (PKR) -->
+      <div class="bg-gradient-to-r from-emeraldSurface via-[#092B19] to-emeraldSurface border border-goldPrimary/60 rounded-2xl p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="text-xs text-gray-400 font-bold uppercase">AVAILABLE WALLET BALANCE</div>
+            <div class="text-3xl sm:text-4xl font-black text-goldBright mt-1">
+              Rs. <span x-text="walletBalance.toLocaleString()"></span>
+            </div>
+            <div class="text-xs text-gray-300 mt-1">Instant payouts to JazzCash, EasyPaisa & Bank</div>
+          </div>
+
+          <div class="flex gap-2">
+            <button @click="showDepositModal = true" class="px-5 py-2.5 bg-goldPrimary text-black font-extrabold text-xs rounded-xl shadow-lg hover:brightness-110">
+              + Top-up Deposit
+            </button>
+            <button @click="showWithdrawModal = true" class="px-5 py-2.5 bg-emeraldSurfaceVar border border-emeraldBorder text-white font-bold text-xs rounded-xl hover:border-goldPrimary">
+              Withdraw
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- My Purchased Tickets -->
+      <div class="bg-emeraldSurface border border-emeraldBorder rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-extrabold text-white text-sm">🎟️ My Purchased Tickets (<span x-text="userTickets.length"></span>)</h3>
+          <span class="text-xs text-gray-400">Live active entries</span>
+        </div>
+
+        <div class="space-y-2">
+          <template x-for="ticket in userTickets" :key="ticket.id">
+            <div class="p-3 bg-[#061D12] rounded-xl flex items-center justify-between text-xs border border-emeraldBorder/50">
+              <div>
+                <div class="font-mono font-bold text-goldBright" x-text="ticket.id"></div>
+                <div class="text-[11px] text-gray-300" x-text="ticket.drawTitle"></div>
+                <div class="text-[10px] text-gray-400" x-text="'Numbers: ' + ticket.numbers"></div>
+              </div>
+              <span class="text-[10px] text-emerald-400 font-bold bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/40">In Draw Pool</span>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Transaction History Log -->
+      <div class="bg-emeraldSurface border border-emeraldBorder rounded-2xl p-5">
+        <h3 class="font-extrabold text-white text-sm mb-3">📜 Transaction History</h3>
         <div class="space-y-2">
           <template x-for="tx in transactions" :key="tx.id">
-            <div class="p-3 bg-[#061D12] border border-emeraldBorder/40 rounded-xl flex items-center justify-between text-xs">
-              <div class="flex items-center gap-3">
-                <span class="text-base" x-text="tx.type === 'DEPOSIT' ? '📥' : (tx.type === 'WIN' ? '🏆' : '🎟️')"></span>
+            <div class="p-3 bg-[#061D12] rounded-xl flex items-center justify-between text-xs border border-emeraldBorder/30">
+              <div class="flex items-center gap-2">
+                <span x-text="tx.type === 'DEPOSIT' ? '📥' : (tx.type === 'WIN' ? '🏆' : '🎟️')"></span>
                 <div>
                   <div class="font-bold text-white" x-text="tx.desc"></div>
                   <div class="text-[10px] text-gray-400" x-text="tx.date"></div>
                 </div>
               </div>
-              <div class="text-right">
-                <div class="font-black" :class="tx.isCredit ? 'text-emerald-400' : 'text-red-400'">
-                  <span x-text="tx.isCredit ? '+' : '-'"></span> Rs. <span x-text="tx.amount.toLocaleString()"></span>
-                </div>
-                <div class="text-[10px] text-emerald-400 font-bold">COMPLETED</div>
+              <div class="font-black" :class="tx.isCredit ? 'text-emerald-400' : 'text-red-400'">
+                <span x-text="tx.isCredit ? '+' : '-'"></span> Rs. <span x-text="tx.amount.toLocaleString()"></span>
               </div>
             </div>
           </template>
         </div>
       </div>
-    </div>
 
-    <!-- TAB 6: HOW TO PLAY & FAQS -->
-    <div x-show="currentTab === 'rules'" class="space-y-6" x-cloak>
-      <div class="bg-emeraldSurface border border-emeraldBorder rounded-2xl p-6">
-        <h2 class="text-2xl font-black text-goldPrimary mb-2">How to Play Pakistan Lottery (6+1 Rules)</h2>
-        <div class="space-y-4 text-xs sm:text-sm text-gray-300 leading-relaxed">
-          <div class="p-4 bg-[#061F13] rounded-xl border border-emeraldBorder/50">
-            <h4 class="font-black text-goldBright text-base mb-1">1. The 6+1 Number Structure</h4>
-            <p>Modeled after the UAE Lottery format, each ticket entry consists of selecting 6 Days (from 1 to 31) and 1 Lucky Month (from 1 to 12).</p>
-          </div>
-          <div class="p-4 bg-[#061F13] rounded-xl border border-emeraldBorder/50">
-            <h4 class="font-black text-goldBright text-base mb-1">2. Prize Tiers & Odds</h4>
-            <ul class="list-disc list-inside space-y-1 mt-2 text-xs">
-              <li><b>Match 6 Days + 1 Month:</b> 1st Prize (Grand Bumper Jackpot - Rs. 75,000,000 PKR)</li>
-              <li><b>Match 6 Days only:</b> 2nd Prize (Rs. 5,000,000 PKR)</li>
-              <li><b>Match 5 Days + 1 Month:</b> 3rd Prize (Rs. 1,000,000 PKR)</li>
-              <li><b>Match 5 Days only:</b> 4th Prize (Rs. 100,000 PKR)</li>
-              <li><b>Match 4 Days:</b> 5th Prize (Rs. 10,000 PKR)</li>
-            </ul>
-          </div>
-          <div class="p-4 bg-[#061F13] rounded-xl border border-emeraldBorder/50">
-            <h4 class="font-black text-goldBright text-base mb-1">3. 100% Guaranteed Manual Transparency</h4>
-            <p>Under official oversight, draws are finalized with 100% verified manual selection. All winning tickets and masked user profiles are immediately recorded on the public Transparency Board.</p>
-          </div>
-        </div>
+      <!-- Discreet Admin Portal Login Button (Staff Only) -->
+      <div class="pt-6 border-t border-emeraldBorder/40 text-center">
+        <button @click="showAdminModal = true" class="text-xs text-gray-500 hover:text-gray-300 font-semibold flex items-center justify-center gap-1 mx-auto">
+          <span>🔒</span> Super Admin Portal Login (Staff Only)
+        </button>
       </div>
     </div>
 
-    <!-- TAB 7: ADMIN CONTROL PANEL (CRITICAL REQUIREMENT) -->
+    <!-- ================= 5. SUPER ADMIN CONTROL PANEL (ISOLATED) ================= -->
     <div x-show="isAdmin && currentTab === 'admin'" class="space-y-6" x-cloak>
-      <div class="bg-red-950/40 border border-red-500 rounded-2xl p-5 flex items-center justify-between">
+      <div class="bg-red-950/50 border border-red-500 rounded-2xl p-5 flex items-center justify-between">
         <div>
-          <span class="text-[10px] font-black text-red-300 bg-red-900 px-2 py-0.5 rounded">SUPER ADMIN CONTROL ACTIVE</span>
-          <h2 class="text-xl font-black text-white mt-1">Manual Winner Selection & Draw Management</h2>
+          <span class="text-[10px] font-black text-red-300 bg-red-900 px-2 py-0.5 rounded">SUPER ADMIN CONTROL CONSOLE</span>
+          <h2 class="text-xl font-black text-white mt-1">Manual Winner Selection & Lottery Management</h2>
         </div>
-        <div class="text-xs text-goldBright font-bold">100% Manual Override Mode</div>
+        <button @click="exitAdmin()" class="px-3 py-1.5 bg-red-900 border border-red-400 text-white font-bold text-xs rounded-lg">
+          Exit Admin
+        </button>
       </div>
 
-      <!-- Manual Winner Declaration Tool -->
+      <!-- Manual Winner Declaration Tool (CRITICAL REQUIREMENT) -->
       <div class="bg-emeraldSurface border border-goldPrimary rounded-2xl p-6">
-        <h3 class="font-black text-goldBright text-base flex items-center gap-2">
-          <span>⚖️</span> Manual Winner Declaration Tool
-        </h3>
-        <p class="text-xs text-gray-300 mt-1">
-          The system will NEVER automatically pick a winner. When a draw ends, the admin inspects all purchased tickets and manually designates or verifies the winning ticket.
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-black text-goldBright text-base flex items-center gap-2">
+            <span>⚖️</span> 100% Manual Winner Selection Tool
+          </h3>
+          <span class="text-[10px] bg-goldPrimary text-black font-black px-2 py-0.5 rounded">NO AUTOMATIC WINNERS</span>
+        </div>
+        <p class="text-xs text-gray-300">
+          The system will NEVER automatically pick a winner. When a draw ends, the admin inspects all purchased tickets and manually designates the winning ticket, or triggers the live randomizer for verification.
         </p>
 
-        <!-- Pool Action: Trigger Live Randomizer -->
+        <!-- Live Backend Pool Randomizer -->
         <div class="my-4 p-4 bg-[#051A0F] border border-emeraldBorder rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
           <div>
             <div class="text-xs font-bold text-white">Live Backend Pool Randomizer</div>
             <div class="text-[11px] text-gray-400">Spin and pick a random candidate ticket from the active pool for admin review.</div>
           </div>
           <button @click="triggerAdminRandomizer()" class="px-5 py-2.5 bg-emeraldSurfaceVar border border-goldPrimary text-goldBright font-extrabold text-xs rounded-xl hover:bg-emeraldSurface">
-            🎰 Trigger Live Randomizer
+            🎰 Spin Live Randomizer
           </button>
         </div>
 
-        <!-- Selected Candidate Preview -->
+        <!-- Selected Candidate Preview & Confirm -->
         <div x-show="adminCandidateTicket" class="p-4 bg-[#0B2E1C] border-2 border-goldPrimary rounded-xl mb-4">
           <div class="flex items-center justify-between">
             <span class="text-xs font-black text-goldBright">CANDIDATE WINNER SELECTED:</span>
@@ -643,9 +670,9 @@
         </div>
       </div>
 
-      <!-- Quick Draw Creator -->
+      <!-- Draw Management (Create New Draw) -->
       <div class="bg-emeraldSurface border border-emeraldBorder rounded-2xl p-6">
-        <h3 class="font-black text-white text-base mb-3">Create New Lucky Draw</h3>
+        <h3 class="font-black text-white text-base mb-3">Create & Launch New Lottery Draw</h3>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <input type="text" x-model="newDrawTitle" placeholder="Draw Title" class="bg-[#061F13] border border-emeraldBorder rounded-xl px-3 py-2 text-xs text-white">
           <input type="number" x-model="newDrawPrize" placeholder="Prize Pool PKR" class="bg-[#061F13] border border-emeraldBorder rounded-xl px-3 py-2 text-xs text-white">
@@ -658,6 +685,50 @@
     </div>
 
   </main>
+
+  <!-- Bottom Navigation Bar for Mobile (EXACTLY 4 OPTIONS) -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#03140A] border-t border-emeraldBorder flex items-center justify-around py-2">
+    <button @click="currentTab = 'home'" class="flex flex-col items-center gap-0.5 text-[10px]"
+            :class="currentTab === 'home' ? 'text-goldBright font-black' : 'text-gray-400 font-semibold'">
+      <span class="text-lg">🏠</span>
+      <span x-text="lang === 'EN' ? 'Home' : 'ہوم'"></span>
+    </button>
+
+    <button @click="currentTab = 'lottery'" class="flex flex-col items-center gap-0.5 text-[10px]"
+            :class="currentTab === 'lottery' ? 'text-goldBright font-black' : 'text-gray-400 font-semibold'">
+      <span class="text-lg">🎟️</span>
+      <span x-text="lang === 'EN' ? 'Lottery' : 'لاٹری'"></span>
+    </button>
+
+    <button @click="currentTab = 'winners'" class="flex flex-col items-center gap-0.5 text-[10px]"
+            :class="currentTab === 'winners' ? 'text-goldBright font-black' : 'text-gray-400 font-semibold'">
+      <span class="text-lg">🏆</span>
+      <span x-text="lang === 'EN' ? 'Winners' : 'فاتحین'"></span>
+    </button>
+
+    <button @click="currentTab = 'me'" class="flex flex-col items-center gap-0.5 text-[10px]"
+            :class="currentTab === 'me' ? 'text-goldBright font-black' : 'text-gray-400 font-semibold'">
+      <span class="text-lg">👤</span>
+      <span x-text="lang === 'EN' ? 'Me' : 'می'"></span>
+    </button>
+  </nav>
+
+  <!-- Admin PIN Login Modal -->
+  <div x-show="showAdminModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md" x-cloak>
+    <div class="bg-emeraldSurface border border-goldPrimary rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl relative">
+      <button @click="showAdminModal = false" class="absolute top-4 right-4 text-gray-400 hover:text-white">✕</button>
+      <div class="text-3xl mb-2">🔒</div>
+      <h3 class="text-lg font-black text-goldBright">Super Admin Access</h3>
+      <p class="text-xs text-gray-300 mb-4">Enter management PIN to access manual winner selection and lottery controls.</p>
+
+      <input type="password" x-model="adminPinInput" placeholder="Enter PIN (admin123)" class="w-full bg-[#061F13] border border-emeraldBorder rounded-xl px-4 py-2 text-center text-sm text-white focus:outline-none focus:border-goldPrimary mb-3">
+      <p x-show="adminPinError" class="text-xs text-red-400 font-semibold mb-3">Invalid PIN. Try: admin123</p>
+
+      <button @click="loginAdmin()" class="w-full py-3 bg-goldPrimary text-black font-extrabold text-xs rounded-xl shadow-lg hover:brightness-110">
+        Unlock Admin Console
+      </button>
+    </div>
+  </div>
 
   <!-- Deposit Modal -->
   <div x-show="showDepositModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md" x-cloak>
@@ -688,18 +759,42 @@
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="border-t border-emeraldBorder/50 bg-[#020B05] py-8 px-4 text-center text-xs text-gray-400">
-    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center gap-2">
-        <div class="w-6 h-6 rounded-full border border-goldPrimary overflow-hidden">
-          <img src="/logo.jpg" alt="Emblem" class="w-full h-full object-cover">
-        </div>
-        <span class="font-bold text-gray-300">Pakistan Lottery Ltd • Official Lucky Draw & Gaming Platform</span>
+  <!-- Interactive Scratch Modal -->
+  <div x-show="activeScratchCard" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md" x-cloak>
+    <div class="bg-emeraldSurface border border-goldPrimary rounded-3xl max-w-md w-full p-6 text-center relative shadow-2xl">
+      <button @click="activeScratchCard = null" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl">✕</button>
+
+      <h3 class="text-xl font-black text-goldBright" x-text="activeScratchCard?.title"></h3>
+      <p class="text-xs text-gray-300">Cost: Rs. <span x-text="activeScratchCard?.price"></span> • Scratch to reveal 3 matching symbols</p>
+
+      <div class="grid grid-cols-3 gap-2.5 my-6 bg-[#04150C] p-4 rounded-2xl border border-goldPrimary/40">
+        <template x-for="(tile, idx) in scratchGrid" :key="idx">
+          <div @click="scratchTile(idx)"
+               class="h-20 rounded-xl flex items-center justify-center text-3xl font-black cursor-pointer border transition"
+               :class="tile.revealed ? 'bg-[#0E3620] border-goldPrimary text-white shadow-inner' : 'bg-gradient-to-br from-gray-400 to-gray-600 border-gray-300 text-gray-900 shadow-md'">
+            <span x-show="tile.revealed" x-text="tile.symbol"></span>
+            <span x-show="!tile.revealed" class="text-xs font-black opacity-60">🪙 TAP</span>
+          </div>
+        </template>
       </div>
-      <div>18+ Responsible Gaming • All Currency in Pakistani Rupees (PKR)</div>
+
+      <div x-show="scratchWon" class="mb-4 p-3 bg-emerald-950 border border-emerald-400 rounded-xl text-emerald-200 text-sm font-black">
+        🎉 CONGRATULATIONS! You won Rs. <span x-text="scratchPrize.toLocaleString()"></span>! Credited to your wallet.
+      </div>
+      <div x-show="scratchRevealedAll && !scratchWon" class="mb-4 p-3 bg-red-950 border border-red-500 rounded-xl text-red-200 text-xs font-bold">
+        No 3 matches this time. Better luck next scratch!
+      </div>
+
+      <div class="flex gap-2">
+        <button @click="revealAllScratch()" class="flex-1 py-3 bg-emeraldSurfaceVar border border-goldPrimary text-goldBright font-bold text-xs rounded-xl">
+          Reveal All
+        </button>
+        <button @click="activeScratchCard = null" class="flex-1 py-3 bg-goldPrimary text-black font-extrabold text-xs rounded-xl">
+          Done
+        </button>
+      </div>
     </div>
-  </footer>
+  </div>
 
   <script>
     function lotteryApp() {
@@ -708,11 +803,24 @@
         is18Confirmed: false,
         isAdmin: false,
         currentTab: 'home',
+        lotterySubTab: 'draws',
         walletBalance: 15000,
+        currentBanner: 0,
+        banners: [
+          { src: '/banner.jpg', title: 'Grand Bumper' },
+          { src: '/banner_mega.jpg', title: 'Mega Draw' },
+          { src: '/banner_daily.jpg', title: 'Daily Super 7' }
+        ],
         timer: { days: '02', hours: '08', minutes: '45', seconds: '30' },
+        rollingPotPkr: 75482900,
+        liveTicketsCount: 14820,
         selectedDays: [7, 14, 21],
         selectedMonth: 3,
         showDepositModal: false,
+        showWithdrawModal: false,
+        showAdminModal: false,
+        adminPinInput: '',
+        adminPinError: false,
         depositAmt: 2500,
         depositTid: '',
 
@@ -744,6 +852,10 @@
           { id: 'cd-1', title: 'Quaid-e-Azam Memorial Draw', prizePoolPkr: 50000000, winnerPrize: 50000000, winningDays: [5, 12, 19, 23, 28, 31], winningMonth: 8, winnerName: 'Ali Hamza (Lahore)', winnerTicket: 'PKL-2026-78401' }
         ],
 
+        userTickets: [
+          { id: 'PKL-2026-89102', drawTitle: 'Pakistan Grand Bumper 2026', numbers: '07,14,21,22,29,30 + M3' }
+        ],
+
         transactions: [
           { id: 'tx-1', desc: 'EasyPaisa Fast Top-up', amount: 16000, date: '01 Nov, 12:40 PM', type: 'DEPOSIT', isCredit: true },
           { id: 'tx-2', desc: 'Grand Bumper Ticket Entry', amount: 1000, date: '01 Nov, 01:15 PM', type: 'PURCHASE', isCredit: false }
@@ -761,12 +873,23 @@
         newDrawTicketCost: '',
 
         init() {
+          // Banner auto-slider loop (every 3.5s)
+          setInterval(() => {
+            this.currentBanner = (this.currentBanner + 1) % this.banners.length;
+          }, 3500);
+
           // Timer countdown loop
           setInterval(() => {
             let s = parseInt(this.timer.seconds) - 1;
             if (s < 0) s = 59;
             this.timer.seconds = String(s).padStart(2, '0');
           }, 1000);
+
+          // Live rolling pot loop
+          setInterval(() => {
+            this.rollingPotPkr += Math.floor(1000 + Math.random() * 4000);
+            this.liveTicketsCount += Math.floor(1 + Math.random() * 3);
+          }, 2000);
         },
 
         confirmAge() {
@@ -777,14 +900,10 @@
           this.lang = (this.lang === 'EN' ? 'UR' : 'EN');
         },
 
-        toggleAdmin() {
-          this.isAdmin = !this.isAdmin;
-          if (this.isAdmin) this.currentTab = 'admin';
-        },
-
-        selectDrawForPlay(draw) {
+        openLotteryDraw(draw) {
           this.selectedDraw = draw;
-          this.currentTab = 'play';
+          this.currentTab = 'lottery';
+          this.lotterySubTab = 'draws';
         },
 
         toggleDay(day) {
@@ -823,7 +942,9 @@
           const ticketId = 'PKL-2026-' + Math.floor(10000 + Math.random() * 90000);
           const numbersStr = this.selectedDays.map(n => String(n).padStart(2, '0')).join(',') + ' + M' + this.selectedMonth;
 
-          this.ticketPool.unshift({ id: ticketId, user: 'Muhammad Zeeshan', numbers: numbersStr });
+          const newTicket = { id: ticketId, user: 'Muhammad Zeeshan', numbers: numbersStr, drawTitle: this.selectedDraw.title };
+          this.ticketPool.unshift(newTicket);
+          this.userTickets.unshift(newTicket);
           this.transactions.unshift({
             id: 'tx-' + Date.now(),
             desc: `1x Entry for ${this.selectedDraw.title} (${ticketId})`,
@@ -835,6 +956,7 @@
 
           alert(`🎉 Ticket Purchased Successfully!\nTicket ID: ${ticketId}\nNumbers: ${numbersStr}`);
           this.clearSelection();
+          this.currentTab = 'me';
         },
 
         openScratchGame(card) {
@@ -897,15 +1019,11 @@
           } else {
             const inPool = this.ticketPool.find(t => t.id === q);
             if (inPool) {
-              this.ticketVerifyResult = { won: false, text: `Ticket ${q} is valid and currently in active pool waiting for draw.` };
+              this.ticketVerifyResult = { won: false, text: `Ticket ${q} is valid and currently active in draw pool.` };
             } else {
               this.ticketVerifyResult = { won: false, text: `No ticket found with ID ${q}. Please verify spelling.` };
             }
           }
-        },
-
-        openDepositModal() {
-          this.showDepositModal = true;
         },
 
         confirmDeposit() {
@@ -920,11 +1038,24 @@
             isCredit: true
           });
           this.showDepositModal = false;
-          alert(`Rs. ${this.depositAmt.toLocaleString()} deposited to your wallet!`);
+          alert(`Rs. ${this.depositAmt.toLocaleString()} deposited successfully!`);
         },
 
-        openWithdrawModal() {
-          alert('Withdrawal Request Form:\nPlease select payout to JazzCash or EasyPaisa in your mobile wallet.');
+        loginAdmin() {
+          if (this.adminPinInput.trim() === 'admin123' || this.adminPinInput.trim() === '1234') {
+            this.isAdmin = true;
+            this.showAdminModal = false;
+            this.adminPinError = false;
+            this.adminPinInput = '';
+            this.currentTab = 'admin';
+          } else {
+            this.adminPinError = true;
+          }
+        },
+
+        exitAdmin() {
+          this.isAdmin = false;
+          this.currentTab = 'me';
         },
 
         triggerAdminRandomizer() {
@@ -949,9 +1080,9 @@
             winnerTicket: winner.id
           });
 
-          alert(`🎉 WINNER DECLARED MANUALLY BY ADMIN!\nWinner: ${winner.user}\nTicket: ${winner.id}\nPrize: Rs. ${prize.toLocaleString()} has been credited and published to Results & Transparency Board!`);
+          alert(`🎉 WINNER DECLARED BY ADMIN!\nWinner: ${winner.user}\nTicket: ${winner.id}\nPrize: Rs. ${prize.toLocaleString()} credited and published to Winners Board!`);
           this.adminCandidateTicket = null;
-          this.currentTab = 'results';
+          this.currentTab = 'winners';
         },
 
         createDraw() {

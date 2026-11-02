@@ -163,27 +163,32 @@ fun LotteryTopBar(
           )
         }
 
-        // Admin Toggle Button
-        Box(
-          contentAlignment = Alignment.Center,
-          modifier = Modifier
-            .size(32.dp)
-            .clip(CircleShape)
-            .background(if (isAdmin) Color(0xFF5C1010) else Color(0xFF0D2E1E))
-            .border(
-              1.dp,
-              if (isAdmin) Color(0xFFFF5252) else EmeraldBorder,
-              CircleShape
+        // If Admin is active, show Exit Admin pill
+        if (isAdmin) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+              .clip(RoundedCornerShape(20.dp))
+              .background(Color(0xFF5C1010))
+              .border(1.dp, Color(0xFFFF5252), RoundedCornerShape(20.dp))
+              .clickable(onClick = onRoleToggle)
+              .padding(horizontal = 8.dp, vertical = 5.dp)
+              .testTag("admin_role_toggle_button")
+          ) {
+            Icon(
+              imageVector = Icons.Default.AdminPanelSettings,
+              contentDescription = "Exit Admin",
+              tint = Color.White,
+              modifier = Modifier.size(14.dp)
             )
-            .clickable(onClick = onRoleToggle)
-            .testTag("admin_role_toggle_button")
-        ) {
-          Icon(
-            imageVector = Icons.Default.AdminPanelSettings,
-            contentDescription = "Admin Switch",
-            tint = if (isAdmin) Color.White else GoldPrimary,
-            modifier = Modifier.size(18.dp)
-          )
+            Text(
+              text = "Exit",
+              color = Color.White,
+              fontSize = 11.sp,
+              fontWeight = FontWeight.Bold,
+              modifier = Modifier.padding(start = 3.dp)
+            )
+          }
         }
       }
     }

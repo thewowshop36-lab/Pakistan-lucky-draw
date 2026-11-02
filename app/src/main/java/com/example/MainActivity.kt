@@ -14,13 +14,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -51,19 +48,16 @@ import com.example.ui.components.AgeVerificationDialog
 import com.example.ui.components.LanguageManager
 import com.example.ui.components.LotteryTopBar
 import com.example.ui.screens.AdminScreen
-import com.example.ui.screens.DrawGameScreen
 import com.example.ui.screens.HomeScreen
-import com.example.ui.screens.HowToPlayScreen
+import com.example.ui.screens.LotteryScreen
+import com.example.ui.screens.MeScreen
 import com.example.ui.screens.ResultsScreen
-import com.example.ui.screens.ScratchCardsScreen
-import com.example.ui.screens.WalletScreen
 import com.example.ui.theme.EmeraldBorder
 import com.example.ui.theme.EmeraldDark
 import com.example.ui.theme.GoldBright
 import com.example.ui.theme.GoldPrimary
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.TextMuted
-import com.example.ui.theme.TextSecondary
 import kotlinx.coroutines.flow.collectLatest
 
 class MainActivity : ComponentActivity() {
@@ -121,7 +115,11 @@ fun MainAppContent(viewModel: LotteryViewModel) {
 
   // Handle system back navigation
   BackHandler(enabled = currentScreen != LotteryScreen.HOME) {
-    viewModel.navigateTo(LotteryScreen.HOME)
+    if (currentScreen == LotteryScreen.ADMIN) {
+      viewModel.exitAdminConsole()
+    } else {
+      viewModel.navigateTo(LotteryScreen.HOME)
+    }
   }
 
   // 18+ Verification Modal on first launch
@@ -137,82 +135,60 @@ fun MainAppContent(viewModel: LotteryViewModel) {
       LotteryTopBar(
         currentBalance = currentUser?.walletBalancePkr ?: 0L,
         currentLanguage = language,
-        isAdmin = isAdminMode,
+        isAdmin = currentScreen == LotteryScreen.ADMIN,
         onLanguageToggle = { viewModel.toggleLanguage() },
-        onRoleToggle = { viewModel.toggleAdminMode() },
-        onWalletClick = { viewModel.navigateTo(LotteryScreen.WALLET) }
+        onRoleToggle = { viewModel.exitAdminConsole() },
+        onWalletClick = { viewModel.navigateTo(LotteryScreen.ME) }
       )
     },
     bottomBar = {
-      NavigationBar(
-        containerColor = Color(0xFF03140A),
-        contentColor = GoldPrimary,
-        modifier = Modifier
-          .border(0.5.dp, EmeraldBorder)
-          .navigationBarsPadding()
-      ) {
-        NavigationBarItem(
-          selected = currentScreen == LotteryScreen.HOME,
-          onClick = { viewModel.navigateTo(LotteryScreen.HOME) },
-          icon = { Icon(imageVector = Icons.Default.Home, contentDescription = "Home", modifier = Modifier.size(20.dp)) },
-          label = { Text(text = LanguageManager.get("nav_home", language), fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-          colors = navBarColors(),
-          modifier = Modifier.testTag("nav_item_home")
-        )
-
-        NavigationBarItem(
-          selected = currentScreen == LotteryScreen.PLAY,
-          onClick = { viewModel.navigateTo(LotteryScreen.PLAY) },
-          icon = { Icon(imageVector = Icons.Default.ConfirmationNumber, contentDescription = "Draw", modifier = Modifier.size(20.dp)) },
-          label = { Text(text = LanguageManager.get("nav_play", language), fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-          colors = navBarColors(),
-          modifier = Modifier.testTag("nav_item_play")
-        )
-
-        NavigationBarItem(
-          selected = currentScreen == LotteryScreen.SCRATCH,
-          onClick = { viewModel.navigateTo(LotteryScreen.SCRATCH) },
-          icon = { Icon(imageVector = Icons.Default.Casino, contentDescription = "Scratch", modifier = Modifier.size(20.dp)) },
-          label = { Text(text = LanguageManager.get("nav_scratch", language), fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-          colors = navBarColors(),
-          modifier = Modifier.testTag("nav_item_scratch")
-        )
-
-        NavigationBarItem(
-          selected = currentScreen == LotteryScreen.RESULTS,
-          onClick = { viewModel.navigateTo(LotteryScreen.RESULTS) },
-          icon = { Icon(imageVector = Icons.Default.EmojiEvents, contentDescription = "Results", modifier = Modifier.size(20.dp)) },
-          label = { Text(text = LanguageManager.get("nav_results", language), fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-          colors = navBarColors(),
-          modifier = Modifier.testTag("nav_item_results")
-        )
-
-        NavigationBarItem(
-          selected = currentScreen == LotteryScreen.WALLET,
-          onClick = { viewModel.navigateTo(LotteryScreen.WALLET) },
-          icon = { Icon(imageVector = Icons.Default.AccountBalanceWallet, contentDescription = "Wallet", modifier = Modifier.size(20.dp)) },
-          label = { Text(text = LanguageManager.get("nav_wallet", language), fontSize = 10.sp, fontWeight = FontWeight.Bold) },
-          colors = navBarColors(),
-          modifier = Modifier.testTag("nav_item_wallet")
-        )
-
-        if (isAdminMode) {
+      // Bottom navigation has EXACTLY 4 tabs for normal users; hidden on Admin console
+      if (currentScreen != LotteryScreen.ADMIN) {
+        NavigationBar(
+          containerColor = Color(0xFF03140A),
+          contentColor = GoldPrimary,
+          modifier = Modifier
+            .border(0.5.dp, EmeraldBorder)
+            .navigationBarsPadding()
+        ) {
+          // Tab 1: Home (ہوم)
           NavigationBarItem(
-            selected = currentScreen == LotteryScreen.ADMIN,
-            onClick = { viewModel.navigateTo(LotteryScreen.ADMIN) },
-            icon = { Icon(imageVector = Icons.Default.AdminPanelSettings, contentDescription = "Admin", tint = Color(0xFFFF5252), modifier = Modifier.size(20.dp)) },
-            label = { Text(text = "Admin", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF5252)) },
+            selected = currentScreen == LotteryScreen.HOME,
+            onClick = { viewModel.navigateTo(LotteryScreen.HOME) },
+            icon = { Icon(imageVector = Icons.Default.Home, contentDescription = "Home", modifier = Modifier.size(20.dp)) },
+            label = { Text(text = LanguageManager.get("nav_home", language), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
             colors = navBarColors(),
-            modifier = Modifier.testTag("nav_item_admin")
+            modifier = Modifier.testTag("nav_item_home")
           )
-        } else {
+
+          // Tab 2: Lottery (لاٹری)
           NavigationBarItem(
-            selected = currentScreen == LotteryScreen.HOW_TO_PLAY,
-            onClick = { viewModel.navigateTo(LotteryScreen.HOW_TO_PLAY) },
-            icon = { Icon(imageVector = Icons.Default.Info, contentDescription = "Rules", modifier = Modifier.size(20.dp)) },
-            label = { Text(text = "Rules", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+            selected = currentScreen == LotteryScreen.LOTTERY,
+            onClick = { viewModel.navigateTo(LotteryScreen.LOTTERY) },
+            icon = { Icon(imageVector = Icons.Default.ConfirmationNumber, contentDescription = "Lottery", modifier = Modifier.size(20.dp)) },
+            label = { Text(text = LanguageManager.get("nav_lottery", language), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
             colors = navBarColors(),
-            modifier = Modifier.testTag("nav_item_rules")
+            modifier = Modifier.testTag("nav_item_lottery")
+          )
+
+          // Tab 3: Winners (فاتحین / نتائج)
+          NavigationBarItem(
+            selected = currentScreen == LotteryScreen.WINNERS,
+            onClick = { viewModel.navigateTo(LotteryScreen.WINNERS) },
+            icon = { Icon(imageVector = Icons.Default.EmojiEvents, contentDescription = "Winners", modifier = Modifier.size(20.dp)) },
+            label = { Text(text = LanguageManager.get("nav_winners", language), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+            colors = navBarColors(),
+            modifier = Modifier.testTag("nav_item_winners")
+          )
+
+          // Tab 4: Me (می / والٹ اور اکاؤنٹ)
+          NavigationBarItem(
+            selected = currentScreen == LotteryScreen.ME,
+            onClick = { viewModel.navigateTo(LotteryScreen.ME) },
+            icon = { Icon(imageVector = Icons.Default.Person, contentDescription = "Me", modifier = Modifier.size(20.dp)) },
+            label = { Text(text = LanguageManager.get("nav_me", language), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+            colors = navBarColors(),
+            modifier = Modifier.testTag("nav_item_me")
           )
         }
       }
@@ -232,34 +208,28 @@ fun MainAppContent(viewModel: LotteryViewModel) {
           activeDraws = activeDraws,
           currentLanguage = language
         )
-        LotteryScreen.PLAY -> DrawGameScreen(
+        LotteryScreen.LOTTERY -> LotteryScreen(
           viewModel = viewModel,
-          draw = selectedDraw ?: activeDraws.firstOrNull(),
+          activeDraws = activeDraws,
+          selectedDraw = selectedDraw ?: activeDraws.firstOrNull(),
           selectedDays = selectedDays,
           selectedMonth = selectedMonth,
           lineQuantity = lineQuantity,
           userBalance = currentUser?.walletBalancePkr ?: 0L,
-          currentLanguage = language
-        )
-        LotteryScreen.SCRATCH -> ScratchCardsScreen(
-          viewModel = viewModel,
-          userBalance = currentUser?.walletBalancePkr ?: 0L,
           scratchRecords = scratchRecords,
           currentLanguage = language
         )
-        LotteryScreen.RESULTS -> ResultsScreen(
+        LotteryScreen.WINNERS -> ResultsScreen(
           completedDraws = completedDraws,
           allTickets = allTickets,
           userTickets = userTickets,
           currentLanguage = language
         )
-        LotteryScreen.WALLET -> WalletScreen(
+        LotteryScreen.ME -> MeScreen(
           viewModel = viewModel,
           currentUser = currentUser,
+          userTickets = userTickets,
           transactions = userTransactions,
-          currentLanguage = language
-        )
-        LotteryScreen.HOW_TO_PLAY -> HowToPlayScreen(
           currentLanguage = language
         )
         LotteryScreen.ADMIN -> AdminScreen(

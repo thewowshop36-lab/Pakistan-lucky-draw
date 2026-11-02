@@ -22,11 +22,9 @@ import kotlinx.coroutines.launch
 
 enum class LotteryScreen {
   HOME,
-  PLAY,
-  SCRATCH,
-  RESULTS,
-  WALLET,
-  HOW_TO_PLAY,
+  LOTTERY,
+  WINNERS,
+  ME,
   ADMIN
 }
 
@@ -156,18 +154,24 @@ class LotteryViewModel(private val repository: LotteryRepository) : ViewModel() 
     _is18Verified.value = true
   }
 
-  fun toggleAdminMode() {
-    val newMode = !_isAdminMode.value
-    _isAdminMode.value = newMode
-    if (newMode) {
+  fun loginAdminWithPin(pin: String): Boolean {
+    if (pin.trim() == "admin123" || pin.trim() == "1234") {
+      _isAdminMode.value = true
       _currentUserId.value = "usr_admin"
       _currentScreen.value = LotteryScreen.ADMIN
-      emitToast("Switched to Super Admin Console")
+      emitToast("Welcome Super Admin!")
+      return true
     } else {
-      _currentUserId.value = "usr_001"
-      _currentScreen.value = LotteryScreen.HOME
-      emitToast("Switched to Player Mode")
+      emitToast("Invalid Admin PIN. Try: admin123")
+      return false
     }
+  }
+
+  fun exitAdminConsole() {
+    _isAdminMode.value = false
+    _currentUserId.value = "usr_001"
+    _currentScreen.value = LotteryScreen.ME
+    emitToast("Exited Admin Console")
   }
 
   fun navigateTo(screen: LotteryScreen) {
@@ -179,7 +183,7 @@ class LotteryViewModel(private val repository: LotteryRepository) : ViewModel() 
     _selectedDays.value = emptySet()
     _selectedMonth.value = null
     _lineQuantity.value = 1
-    _currentScreen.value = LotteryScreen.PLAY
+    _currentScreen.value = LotteryScreen.LOTTERY
   }
 
   fun toggleDaySelection(day: Int) {
