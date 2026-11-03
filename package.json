@@ -1,19 +1,36 @@
 {
-  "name": "pakistan-lottery",
+  "name": "lucky-draw-platform",
   "version": "1.0.0",
-  "description": "Pakistan Lottery - Official Lucky Draw & Gaming Platform (Vercel Ready)",
+  "private": true,
+  "description": "A mobile-first lucky draw and referral platform backed by Supabase.",
   "scripts": {
-    "dev": "npx serve public",
-    "build": "mkdir -p public && echo 'Vercel static build completed successfully'",
-    "start": "npx serve public"
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "lottery",
     "lucky-draw",
     "pakistan",
-    "gaming",
-    "vercel"
+    "vercel",
+    "supabase"
   ],
-  "author": "Pakistan Lottery Ltd",
-  "license": "ISC"
+  "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
+    "lucide-react": "^1.67.0",
+    "next": "^16.4.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.4",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "postcss": "^8.5.32",
+    "tailwindcss": "^4.3.4",
+    "typescript": "^7.0.2"
+  }
 }
