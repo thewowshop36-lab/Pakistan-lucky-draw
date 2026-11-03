@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { CircleUserRound, House, LogOut, Ticket, TicketCheck, Trophy } from "lucide-react"
+import { CircleUserRound, House, LogOut, ShieldCheck, Ticket, TicketCheck, Trophy } from "lucide-react"
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 
@@ -18,6 +18,7 @@ const navigation = [
   { href: "/draws", label: "Draws", icon: Ticket },
   { href: "/history", label: "Winners", icon: Trophy },
   { href: "/profile", label: "Profile", icon: CircleUserRound },
+  { href: "/admin", label: "Admin", icon: ShieldCheck },
 ]
 
 export function SiteChrome({ children, initialUser }: { children: ReactNode; initialUser: InitialUser }) {
@@ -110,7 +111,7 @@ export function SiteChrome({ children, initialUser }: { children: ReactNode; ini
       </footer>
 
       <nav className="mobile-bottom-nav md:hidden" aria-label="Mobile navigation">
-        <div className="mx-auto grid max-w-lg grid-cols-4 gap-1">
+        <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
           {navigation.map((item) => {
             const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
             const Icon = item.icon

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { Check, Copy, Gift, Pencil, Ticket, Wallet } from "lucide-react"
 import { formatDate, formatPkr } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
-import type { Draw, Profile, UserTicket, WalletTransaction } from "@/lib/types"
+import { WalletPanel } from "@/components/wallet-panel"
+import type { Draw, Profile, UserTicket, WalletRequest, WalletTransaction } from "@/lib/types"
 
 export function ProfileDashboard({
   profile,
@@ -13,12 +14,14 @@ export function ProfileDashboard({
   transactions,
   activeDraws,
   availableFreeTickets,
+  walletRequests,
 }: {
   profile: Profile
   tickets: UserTicket[]
   transactions: WalletTransaction[]
   activeDraws: Draw[]
   availableFreeTickets: number
+  walletRequests: WalletRequest[]
 }) {
   const [name, setName] = useState(profile.name)
   const [phone, setPhone] = useState(profile.phone ?? "")
@@ -110,7 +113,7 @@ export function ProfileDashboard({
           <div>
             <p className="text-xs font-semibold text-muted">Wallet balance</p>
             <p className="mt-1 text-2xl font-extrabold tracking-tight text-ink-strong">{formatPkr(profile.balance)}</p>
-            <p className="mt-1 text-[0.68rem] leading-4 text-muted">Wallet credits are managed by the operator; online top-up is not enabled.</p>
+            <p className="mt-1 text-[0.68rem] leading-4 text-muted">JazzCash and Easypaisa requests are reviewed manually.</p>
           </div>
         </article>
         <article className="surface-card flex items-center gap-4 p-5 sm:p-6">
@@ -177,6 +180,8 @@ export function ProfileDashboard({
           {activeDraws.length === 0 && <p className="mt-2 text-xs text-muted">A free ticket can be claimed when an active draw is available.</p>}
         </section>
       </div>
+
+      <WalletPanel balance={profile.balance} phone={profile.phone} requests={walletRequests} />
 
       <section className="surface-card overflow-hidden" aria-labelledby="tickets-heading">
         <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">

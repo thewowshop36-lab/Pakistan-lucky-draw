@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, Check, CircleHelp, ShieldCheck, TicketCheck } from "lucide-react"
+import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, Check, CircleHelp, ShieldCheck, TicketCheck } from "lucide-react"
 import { DrawCard } from "@/components/draw-card"
 import { HeroCarousel } from "@/components/hero-carousel"
 import { createClient } from "@/lib/supabase/server"
@@ -38,6 +38,18 @@ export default async function HomePage() {
   return (
     <div className="page-shell py-7 sm:py-10">
       <HeroCarousel items={heroItems} />
+
+      <section className="surface-card mt-5 flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center sm:p-6" aria-labelledby="wallet-actions-heading">
+        <div>
+          <p className="section-eyebrow">Wallet</p>
+          <h2 id="wallet-actions-heading" className="mt-1 text-lg font-bold text-ink-strong">Deposit or withdraw</h2>
+          <p className="mt-1 max-w-xl text-sm leading-6 text-muted">JazzCash and Easypaisa requests are reviewed manually. {authenticated ? "Open your profile to manage a request." : "Sign in to submit a request."}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/profile#wallet" className="primary-button"><ArrowDownToLine size={16} aria-hidden="true" />Deposit</Link>
+          <Link href="/profile#wallet" className="secondary-button"><ArrowUpFromLine size={16} aria-hidden="true" />Withdraw</Link>
+        </div>
+      </section>
 
       <section className="py-12 sm:py-16" aria-labelledby="draws-heading">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">

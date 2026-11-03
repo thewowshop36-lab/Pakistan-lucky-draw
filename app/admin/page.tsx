@@ -2,11 +2,11 @@ import type { Metadata } from "next"
 import { AuthGate } from "@/components/auth-gate"
 import { AdminPanel } from "@/components/admin/admin-panel"
 import { createClient } from "@/lib/supabase/server"
-import type { Draw, Profile, SiteContent, UserTicket } from "@/lib/types"
+import type { Draw, Profile, SiteContent, UserTicket, WalletRequest } from "@/lib/types"
 
 export const metadata: Metadata = {
   title: "Admin panel",
-  description: "Manage draws, public content, users, and wallet adjustments.",
+  description: "Manage draws, public content, users, and wallet requests.",
   robots: { index: false, follow: false },
 }
 
@@ -33,17 +33,18 @@ export default async function AdminPage() {
           <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#fbefef] text-[#8d4545]"><span className="text-xl font-bold">!</span></span>
           <p className="section-eyebrow mt-5">Restricted area</p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink-strong">Administrator access has not been assigned</h1>
-          <p className="mt-3 text-sm leading-6 text-muted">This account is not on the administrator allowlist. The project owner must nominate a verified account before this panel can be used.</p>
+          <p className="mt-3 text-sm leading-6 text-muted">This account is not on the administrator allowlist. Admin access is assigned to a verified Supabase email; after assignment, return here to manage draws, posts, and wallet requests.</p>
         </section>
       </div>
     )
   }
 
-  const [drawResult, profileResult, ticketResult, contentResult] = await Promise.all([
+  const [drawResult, profileResult, ticketResult, contentResult, walletRequestsResult] = await Promise.all([
     supabase.from("draws").select("id,draw_number,title,description,prize_details,ticket_price,total_tickets,sold_tickets,profit_margin,banner_image_url,status,winner_ticket,winner_user_id,created_at,updated_at,completed_at").order("draw_number", { ascending: true }),
     supabase.from("profiles").select("id,name,phone,balance,referral_count,free_tickets_earned,created_at").order("created_at", { ascending: false }).limit(1000),
     supabase.from("user_tickets").select("id,user_id,ticket_number,status,source,purchase_date,draws(draw_number,title)").order("purchase_date", { ascending: false }).limit(100),
     supabase.from("site_content").select("id,section_name,content_text,media_url,display_order,updated_at").order("display_order", { ascending: true }).order("updated_at", { ascending: false }),
+    supabase.from("wallet_requests").select("id,user_id,request_type,provider,amount,account_phone,transaction_reference,status,admin_note,created_at,updated_at").order("created_at", { ascending: false }).limit(200),
   ])
 
   return (
@@ -61,6 +62,7 @@ export default async function AdminPage() {
         profiles={(profileResult.data ?? []) as unknown as Profile[]}
         tickets={(ticketResult.data ?? []) as unknown as AdminTicket[]}
         content={(contentResult.data ?? []) as unknown as SiteContent[]}
+        walletRequests={(walletRequestsResult.data ?? []) as unknown as WalletRequest[]}
       />
     </div>
   )
