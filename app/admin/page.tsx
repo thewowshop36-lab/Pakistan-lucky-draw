@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
-import { AuthGate } from "@/components/auth-gate"
+import Link from "next/link"
+import { redirect } from "next/navigation"
 import { AdminPanel } from "@/components/admin/admin-panel"
+import { AdminSignOutButton } from "@/components/admin/admin-sign-out-button"
 import { createClient } from "@/lib/supabase/server"
 import type { Draw, Profile, SiteContent, UserTicket, WalletRequest } from "@/lib/types"
 
@@ -16,9 +18,7 @@ export default async function AdminPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    return <div className="page-shell grid min-h-[65vh] place-items-center py-10"><AuthGate admin /></div>
-  }
+  if (!user) redirect("/admin/login")
 
   const { data: membership } = await supabase
     .from("admin_users")
@@ -33,7 +33,11 @@ export default async function AdminPage() {
           <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#fbefef] text-[#8d4545]"><span className="text-xl font-bold">!</span></span>
           <p className="section-eyebrow mt-5">Restricted area</p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink-strong">Administrator access has not been assigned</h1>
-          <p className="mt-3 text-sm leading-6 text-muted">This account is not on the administrator allowlist. Admin access is assigned to a verified Supabase email; after assignment, return here to manage draws, posts, and wallet requests.</p>
+          <p className="mt-3 text-sm leading-6 text-muted">This account is not on the administrator allowlist. Sign in with the authorized admin account to manage draws, posts, users, and wallet requests.</p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/admin/login" className="primary-button">Use admin login</Link>
+            <AdminSignOutButton />
+          </div>
         </section>
       </div>
     )
@@ -55,7 +59,10 @@ export default async function AdminPage() {
           <h1 className="section-title mt-2">Admin panel</h1>
           <p className="mt-2 text-sm text-muted">Manage draws, site content, and user activity.</p>
         </div>
-        <span className="status-pill">Signed in as {user.email}</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="status-pill">Signed in as {user.email}</span>
+          <AdminSignOutButton />
+        </div>
       </div>
       <AdminPanel
         draws={(drawResult.data ?? []) as unknown as Draw[]}
