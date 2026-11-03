@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { AuthGate } from "@/components/auth-gate"
 import { ProfileDashboard } from "@/components/profile-dashboard"
 import { createClient } from "@/lib/supabase/server"
-import type { Draw, Profile, UserTicket, WalletTransaction } from "@/lib/types"
+import type { Draw, Profile, UserTicket, WalletRequest, WalletTransaction } from "@/lib/types"
 
 export const metadata: Metadata = {
   title: "My profile",
@@ -17,12 +17,13 @@ export default async function ProfilePage() {
     return <div className="page-shell grid min-h-[65vh] place-items-center py-10"><AuthGate /></div>
   }
 
-  const [profileResult, ticketsResult, claimsResult, drawsResult, transactionsResult] = await Promise.all([
+  const [profileResult, ticketsResult, claimsResult, drawsResult, transactionsResult, walletRequestsResult] = await Promise.all([
     supabase.from("profiles").select("id,name,phone,balance,referral_count,free_tickets_earned,created_at").eq("id", user.id).maybeSingle(),
     supabase.from("user_tickets").select("id,ticket_number,status,source,purchase_date,draws(draw_number,title)").eq("user_id", user.id).order("purchase_date", { ascending: false }),
     supabase.from("free_ticket_claims").select("id").eq("user_id", user.id),
     supabase.from("draws").select("id,draw_number,title,description,prize_details,ticket_price,total_tickets,sold_tickets,profit_margin,banner_image_url,status,winner_ticket,winner_user_id,created_at,updated_at,completed_at").eq("status", "active").order("draw_number", { ascending: true }),
     supabase.from("wallet_transactions").select("id,amount,transaction_type,description,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(8),
+    supabase.from("wallet_requests").select("id,user_id,request_type,provider,amount,account_phone,transaction_reference,status,admin_note,created_at,updated_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
   ])
 
   const profile = profileResult.data as unknown as Profile | null
@@ -40,6 +41,7 @@ export default async function ProfilePage() {
   const tickets = (ticketsResult.data ?? []) as unknown as UserTicket[]
   const activeDraws = (drawsResult.data ?? []) as unknown as Draw[]
   const transactions = (transactionsResult.data ?? []) as unknown as WalletTransaction[]
+  const walletRequests = (walletRequestsResult.data ?? []) as unknown as WalletRequest[]
   const availableFreeTickets = Math.max(0, profile.free_tickets_earned - (claimsResult.data?.length ?? 0))
 
   return (
@@ -55,6 +57,7 @@ export default async function ProfilePage() {
         transactions={transactions}
         activeDraws={activeDraws}
         availableFreeTickets={availableFreeTickets}
+        walletRequests={walletRequests}
       />
     </div>
   )

@@ -1,21 +1,23 @@
 "use client"
 
 import { useState } from "react"
-import { BarChart3, ImagePlus, Ticket, UsersRound } from "lucide-react"
+import { BarChart3, ImagePlus, Ticket, UsersRound, Wallet } from "lucide-react"
 import { formatPkr } from "@/lib/format"
-import type { Draw, Profile, SiteContent, UserTicket } from "@/lib/types"
+import type { Draw, Profile, SiteContent, UserTicket, WalletRequest } from "@/lib/types"
 import { ContentManager } from "@/components/admin/content-manager"
 import { DrawManager } from "@/components/admin/draw-manager"
 import { UserMonitor } from "@/components/admin/user-monitor"
+import { WalletRequestManager } from "@/components/admin/wallet-request-manager"
 
 type AdminTicket = UserTicket & { user_id: string }
-type Tab = "overview" | "draws" | "content" | "users"
+type Tab = "overview" | "draws" | "content" | "users" | "wallet"
 
 const tabs: { id: Tab; label: string; icon: typeof BarChart3 }[] = [
   { id: "overview", label: "Overview", icon: BarChart3 },
   { id: "draws", label: "Draws", icon: Ticket },
   { id: "content", label: "Content", icon: ImagePlus },
   { id: "users", label: "Users", icon: UsersRound },
+  { id: "wallet", label: "Wallet", icon: Wallet },
 ]
 
 export function AdminPanel({
@@ -23,11 +25,13 @@ export function AdminPanel({
   profiles,
   tickets,
   content,
+  walletRequests,
 }: {
   draws: Draw[]
   profiles: Profile[]
   tickets: AdminTicket[]
   content: SiteContent[]
+  walletRequests: WalletRequest[]
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("overview")
   const activeDraws = draws.filter((draw) => draw.status === "active")
@@ -76,6 +80,7 @@ export function AdminPanel({
               <button type="button" onClick={() => setActiveTab("draws")} className="secondary-button justify-start"><Ticket size={16} aria-hidden="true" /> Create or manage draws</button>
               <button type="button" onClick={() => setActiveTab("content")} className="secondary-button justify-start"><ImagePlus size={16} aria-hidden="true" /> Update homepage content</button>
               <button type="button" onClick={() => setActiveTab("users")} className="secondary-button justify-start"><UsersRound size={16} aria-hidden="true" /> Review users and referrals</button>
+              <button type="button" onClick={() => setActiveTab("wallet")} className="secondary-button justify-start"><Wallet size={16} aria-hidden="true" /> Review deposits and withdrawals</button>
             </div>
           </section>
         </div>
@@ -83,6 +88,7 @@ export function AdminPanel({
       {activeTab === "draws" && <DrawManager draws={draws} />}
       {activeTab === "content" && <ContentManager content={content} />}
       {activeTab === "users" && <UserMonitor profiles={profiles} tickets={tickets} />}
+      {activeTab === "wallet" && <WalletRequestManager requests={walletRequests} profiles={profiles} />}
     </div>
   )
 }

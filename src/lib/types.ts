@@ -60,7 +60,21 @@ export type WinnerRecord = {
 export type WalletTransaction = {
   id: string
   amount: number | string
-  transaction_type: "ticket_purchase" | "admin_credit" | "admin_debit"
+  transaction_type: "ticket_purchase" | "admin_credit" | "admin_debit" | "deposit_credit" | "withdrawal_hold" | "withdrawal_release"
   description: string
   created_at: string
+}
+
+export type WalletRequest = {
+  id: string
+  user_id: string
+  request_type: "deposit" | "withdrawal"
+  provider: "jazzcash" | "easypaisa"
+  amount: number | string
+  account_phone: string
+  transaction_reference: string | null
+  status: "pending" | "approved" | "rejected" | "paid"
+  admin_note: string
+  created_at: string
+  updated_at: string
 }

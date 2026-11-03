@@ -46,6 +46,10 @@ export function SiteChrome({ children, initialUser }: { children: ReactNode; ini
     router.refresh()
   }
 
+  if (pathname.startsWith("/admin")) {
+    return <div className="min-h-screen bg-[#f6f8f5] text-ink">{children}</div>
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 border-b border-line/80 bg-white/95 backdrop-blur-xl">
