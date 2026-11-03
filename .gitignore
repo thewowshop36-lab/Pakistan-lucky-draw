@@ -15,4 +15,9 @@
 .cxx
 local.properties
 .env
+.env.*
+!.env.example
 debug.keystore
+node_modules/
+.next/
+out/
