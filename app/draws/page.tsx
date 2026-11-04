@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import { DrawCard } from "@/components/draw-card"
 import { createClient } from "@/lib/supabase/server"
-import type { Draw } from "@/lib/types"
+import { DRAW_COLUMNS } from "@/lib/queries"
+import type { Draw, DrawPrize, PaymentAccount } from "@/lib/types"
 
 export const metadata: Metadata = {
   title: "Active draws",
@@ -10,26 +11,36 @@ export const metadata: Metadata = {
 
 export default async function DrawsPage() {
   const supabase = await createClient()
-  const [drawResult, authResult] = await Promise.all([
+  const [drawResult, authResult, accountResult] = await Promise.all([
     supabase
       .from("draws")
-      .select("id,draw_number,title,description,prize_details,ticket_price,total_tickets,sold_tickets,profit_margin,banner_image_url,status,winner_ticket,winner_user_id,created_at,updated_at,completed_at")
+      .select(DRAW_COLUMNS)
       .eq("status", "active")
+      .or("closed_at.is.null,end_condition.eq.sold_out")
       .order("draw_number", { ascending: true }),
     supabase.auth.getUser(),
+    supabase.from("payment_accounts").select("provider,account_title,account_identifier,instructions,is_active,updated_at").eq("is_active", true).order("provider"),
   ])
   const draws = (drawResult.data ?? []) as unknown as Draw[]
+  const accounts = (accountResult.data ?? []) as unknown as PaymentAccount[]
+  const eligibilityResult = authResult.data.user ? await supabase.rpc("current_user_can_enter_draw") : { data: false }
+  const eligible = Boolean(eligibilityResult.data)
+  const prizeResult = draws.length ? await supabase.from("draw_prizes_public").select("draw_id,tier_order,prize_name,prize_description,prize_amount,winner_ticket_number,winner_public_name").in("draw_id", draws.map((draw) => draw.id)).order("tier_order") : { data: [] }
+  const prizesByDraw = new Map<string, DrawPrize[]>()
+  for (const prize of (prizeResult.data ?? []) as unknown as DrawPrize[]) {
+    prizesByDraw.set(prize.draw_id, [...(prizesByDraw.get(prize.draw_id) ?? []), prize])
+  }
 
   return (
     <div className="page-shell py-9 sm:py-12">
       <div className="mb-8 max-w-2xl">
         <p className="section-eyebrow">Draws 01–50</p>
         <h1 className="section-title mt-2">Choose an active draw</h1>
-        <p className="mt-3 text-sm leading-6 text-muted">Compare entry prices, prize details, and remaining tickets. Purchases are confirmed from your wallet balance.</p>
+        <p className="mt-3 text-sm leading-6 text-muted">Compare entry prices, prize tiers, and available tickets. Enter from your wallet or submit a JazzCash or Easypaisa transfer for review.</p>
       </div>
       {draws.length ? (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {draws.map((draw) => <DrawCard key={draw.id} draw={draw} authenticated={Boolean(authResult.data.user)} />)}
+          {draws.map((draw) => <DrawCard key={draw.id} draw={draw} authenticated={Boolean(authResult.data.user)} eligible={eligible} accounts={accounts} prizes={prizesByDraw.get(draw.id) ?? []} />)}
         </div>
       ) : (
         <div className="surface-card grid min-h-64 place-items-center p-8 text-center">

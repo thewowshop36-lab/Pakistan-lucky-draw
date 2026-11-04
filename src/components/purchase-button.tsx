@@ -12,11 +12,13 @@ export function PurchaseButton({
   ticketPrice,
   remaining,
   authenticated,
+  eligible,
 }: {
   drawId: string
   ticketPrice: number | string
   remaining: number
   authenticated: boolean
+  eligible: boolean
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [quantity, setQuantity] = useState(1)
@@ -42,7 +44,7 @@ export function PurchaseButton({
     if (error) {
       const text = error.message.toLowerCase()
       if (text.includes("balance")) setMessage("Your wallet balance is too low. Ask an administrator about wallet credits.")
-      else if (text.includes("confirm your email")) setMessage("Confirm your email address before buying tickets.")
+      else if (text.includes("confirm your email") || text.includes("verification")) setMessage("Complete account verification before entering a draw.")
       else if (text.includes("remaining") || text.includes("not open")) setMessage("Availability changed. Refresh the page and try again.")
       else setMessage("The purchase could not be completed. Please try again.")
       return
@@ -61,6 +63,10 @@ export function PurchaseButton({
         <LockKeyhole size={16} aria-hidden="true" /> Sign in to buy
       </Link>
     )
+  }
+
+  if (!eligible) {
+    return <Link href="/profile#eligibility" className="primary-button w-full">Verify account to enter</Link>
   }
 
   return (
@@ -106,7 +112,7 @@ export function PurchaseButton({
                   {ticketNumbers.length > 0 && <Check className="mr-1 inline" size={16} aria-hidden="true" />}{message}
                 </p>
               )}
-              <p className="text-xs leading-5 text-muted">Purchases are charged to your wallet balance. Review the draw terms before confirming.</p>
+              <p className="text-xs leading-5 text-muted">Purchases are charged to your wallet balance. See the <Link href="/terms" className="font-semibold text-green underline">draw terms</Link> before confirming.</p>
               <button type="submit" className="primary-button w-full" disabled={busy || remaining <= 0}>
                 {busy ? "Confirming…" : ticketNumbers.length ? "Buy more" : "Confirm purchase"}
               </button>

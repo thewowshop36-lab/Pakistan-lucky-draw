@@ -1,11 +1,27 @@
 import { CalendarDays, CircleDollarSign, Ticket, TicketCheck } from "lucide-react"
 import { formatPkr, getProgress } from "@/lib/format"
-import type { Draw } from "@/lib/types"
+import type { Draw, DrawPrize, PaymentAccount } from "@/lib/types"
+import { ManualTicketPayment } from "@/components/manual-ticket-payment"
 import { PurchaseButton } from "@/components/purchase-button"
+import { SoldOutDrawFinalizer } from "@/components/sold-out-finalizer"
 
-export function DrawCard({ draw, authenticated }: { draw: Draw; authenticated: boolean }) {
-  const remaining = Math.max(0, draw.total_tickets - draw.sold_tickets)
-  const progress = getProgress(draw.sold_tickets, draw.total_tickets)
+export function DrawCard({
+  draw,
+  authenticated,
+  eligible,
+  accounts,
+  prizes,
+}: {
+  draw: Draw
+  authenticated: boolean
+  eligible: boolean
+  accounts: PaymentAccount[]
+  prizes: DrawPrize[]
+}) {
+  const remaining = Math.max(0, draw.total_tickets - draw.sold_tickets - draw.reserved_tickets)
+  const occupied = draw.sold_tickets + draw.reserved_tickets
+  const progress = getProgress(occupied, draw.total_tickets)
+  const soldOut = draw.sold_tickets === draw.total_tickets && draw.reserved_tickets === 0
 
   return (
     <article className="surface-card flex h-full flex-col overflow-hidden">
@@ -33,20 +49,44 @@ export function DrawCard({ draw, authenticated }: { draw: Draw; authenticated: b
         </div>
         {draw.prize_details && <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted">{draw.prize_details}</p>}
         {draw.description && <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted">{draw.description}</p>}
+        {prizes.length > 0 && (
+          <div className="mt-4 rounded-xl bg-surface-soft p-3.5">
+            <p className="text-[0.65rem] font-bold uppercase tracking-wide text-muted">Prize tiers</p>
+            <ul className="mt-2 space-y-2">
+              {prizes.slice(0, 3).map((prize) => (
+                <li key={`${prize.draw_id}-${prize.tier_order}`} className="flex items-center justify-between gap-3 text-xs">
+                  <span className="min-w-0 truncate font-semibold text-ink-strong">{prize.tier_order}. {prize.prize_name}</span>
+                  {Number(prize.prize_amount) > 0 && <span className="shrink-0 font-bold text-green">{formatPkr(prize.prize_amount)}</span>}
+                </li>
+              ))}
+              {prizes.length > 3 && <li className="text-[0.68rem] text-muted">+{prizes.length - 3} more prize tiers</li>}
+            </ul>
+          </div>
+        )}
         <div className="mt-5">
           <div className="mb-2 flex items-center justify-between gap-2 text-xs">
-            <span className="font-semibold text-ink">{remaining.toLocaleString()} tickets left</span>
-            <span className="text-muted">{draw.sold_tickets.toLocaleString()} / {draw.total_tickets.toLocaleString()} sold</span>
+            <span className="font-semibold text-ink">{remaining.toLocaleString()} tickets available</span>
+            <span className="text-right text-muted">{draw.sold_tickets.toLocaleString()} sold{draw.reserved_tickets > 0 ? ` · ${draw.reserved_tickets.toLocaleString()} pending` : ` / ${draw.total_tickets.toLocaleString()}`}</span>
           </div>
-          <div className="progress-track" role="progressbar" aria-label={`${draw.title} tickets sold`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
+          <div className="progress-track" role="progressbar" aria-label={`${draw.title} tickets sold or reserved`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
             <div className="progress-fill" style={{ width: `${progress}%` }} />
           </div>
         </div>
         <div className="mt-auto pt-5">
-          <PurchaseButton drawId={draw.id} ticketPrice={draw.ticket_price} remaining={remaining} authenticated={authenticated} />
+          {!soldOut && remaining > 0 ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              <PurchaseButton drawId={draw.id} ticketPrice={draw.ticket_price} remaining={remaining} authenticated={authenticated} eligible={eligible} />
+              <ManualTicketPayment drawId={draw.id} ticketPrice={draw.ticket_price} remaining={remaining} authenticated={authenticated} eligible={eligible} accounts={accounts} />
+            </div>
+          ) : draw.reserved_tickets > 0 ? (
+            <p className="rounded-xl bg-gold-soft px-3.5 py-3 text-center text-xs font-semibold text-[#765c22]">All remaining tickets are reserved while payments are reviewed.</p>
+          ) : (
+            <p className="rounded-xl bg-surface-soft px-3.5 py-3 text-center text-xs font-semibold text-muted">All tickets are sold.</p>
+          )}
+          {soldOut && draw.end_condition === "sold_out" && <SoldOutDrawFinalizer drawId={draw.id} />}
           <p className="mt-3 flex items-center justify-center gap-1.5 text-[0.68rem] text-muted">
             {remaining > 0 ? <Ticket size={13} aria-hidden="true" /> : <CalendarDays size={13} aria-hidden="true" />}
-            {remaining > 0 ? "Ticket number assigned after confirmation" : "No tickets remain"}
+            {remaining > 0 ? "Ticket numbers are assigned after confirmation" : "Results are published with public verification"}
           </p>
         </div>
       </div>

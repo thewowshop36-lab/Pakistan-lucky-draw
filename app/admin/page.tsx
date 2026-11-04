@@ -4,7 +4,8 @@ import { redirect } from "next/navigation"
 import { AdminPanel } from "@/components/admin/admin-panel"
 import { AdminSignOutButton } from "@/components/admin/admin-sign-out-button"
 import { createClient } from "@/lib/supabase/server"
-import type { Draw, Profile, SiteContent, UserTicket, WalletRequest } from "@/lib/types"
+import { DRAW_COLUMNS } from "@/lib/queries"
+import type { AdminAuditLog, Draw, DrawFinancialSummary, DrawPrize, PaymentAccount, Profile, SiteContent, TicketPaymentSubmission, UserTicket, WalletRequest } from "@/lib/types"
 
 export const metadata: Metadata = {
   title: "Admin panel",
@@ -43,12 +44,17 @@ export default async function AdminPage() {
     )
   }
 
-  const [drawResult, profileResult, ticketResult, contentResult, walletRequestsResult] = await Promise.all([
-    supabase.from("draws").select("id,draw_number,title,description,prize_details,ticket_price,total_tickets,sold_tickets,profit_margin,banner_image_url,status,winner_ticket,winner_user_id,created_at,updated_at,completed_at").order("draw_number", { ascending: true }),
-    supabase.from("profiles").select("id,name,phone,balance,referral_count,free_tickets_earned,created_at").order("created_at", { ascending: false }).limit(1000),
+  const [drawResult, profileResult, ticketResult, contentResult, walletRequestsResult, ticketPaymentResult, paymentAccountResult, prizeResult, financialResult, auditResult] = await Promise.all([
+    supabase.from("draws").select(DRAW_COLUMNS).order("draw_number", { ascending: true }),
+    supabase.from("profiles").select("id,name,phone,email_verified_at,phone_verified_at,age_confirmed_at,terms_accepted_at,terms_version,account_status,suspended_at,suspension_reason,balance,referral_count,free_tickets_earned,created_at").order("created_at", { ascending: false }).limit(1000),
     supabase.from("user_tickets").select("id,user_id,ticket_number,status,source,purchase_date,draws(draw_number,title)").order("purchase_date", { ascending: false }).limit(100),
     supabase.from("site_content").select("id,section_name,content_text,media_url,display_order,updated_at").order("display_order", { ascending: true }).order("updated_at", { ascending: false }),
     supabase.from("wallet_requests").select("id,user_id,request_type,provider,amount,account_phone,transaction_reference,status,admin_note,created_at,updated_at").order("created_at", { ascending: false }).limit(200),
+    supabase.from("ticket_payment_submissions").select("id,user_id,draw_id,provider,quantity,ticket_price,amount,transaction_reference,proof_path,status,admin_note,reviewed_at,created_at,profiles(name,phone),draws(draw_number,title)").order("created_at", { ascending: false }).limit(200),
+    supabase.from("payment_accounts").select("provider,account_title,account_identifier,instructions,is_active,updated_at").order("provider", { ascending: true }),
+    supabase.rpc("admin_get_draw_prizes"),
+    supabase.rpc("admin_get_draw_financials"),
+    supabase.rpc("admin_get_recent_audit_logs", { p_limit: 50 }),
   ])
 
   return (
@@ -65,11 +71,17 @@ export default async function AdminPage() {
         </div>
       </div>
       <AdminPanel
+        currentUserId={user.id}
         draws={(drawResult.data ?? []) as unknown as Draw[]}
         profiles={(profileResult.data ?? []) as unknown as Profile[]}
         tickets={(ticketResult.data ?? []) as unknown as AdminTicket[]}
         content={(contentResult.data ?? []) as unknown as SiteContent[]}
         walletRequests={(walletRequestsResult.data ?? []) as unknown as WalletRequest[]}
+        ticketPayments={(ticketPaymentResult.data ?? []) as unknown as TicketPaymentSubmission[]}
+        paymentAccounts={(paymentAccountResult.data ?? []) as unknown as PaymentAccount[]}
+        prizes={(prizeResult.data ?? []) as unknown as DrawPrize[]}
+        financials={(financialResult.data ?? []) as unknown as DrawFinancialSummary[]}
+        auditLogs={(auditResult.data ?? []) as unknown as AdminAuditLog[]}
       />
     </div>
   )

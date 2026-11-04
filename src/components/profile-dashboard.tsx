@@ -6,7 +6,13 @@ import { Check, Copy, Gift, Pencil, Ticket, Wallet } from "lucide-react"
 import { formatDate, formatPkr } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
 import { WalletPanel } from "@/components/wallet-panel"
-import type { Draw, Profile, UserTicket, WalletRequest, WalletTransaction } from "@/lib/types"
+import { EligibilityForm } from "@/components/eligibility-form"
+import { PhoneVerification } from "@/components/phone-verification"
+import type { Draw, PaymentAccount, Profile, TicketPaymentSubmission, UserTicket, WalletRequest, WalletTransaction } from "@/lib/types"
+
+function one<T>(relation: T | T[] | null | undefined): T | null {
+  return Array.isArray(relation) ? relation[0] ?? null : relation ?? null
+}
 
 export function ProfileDashboard({
   profile,
@@ -15,6 +21,8 @@ export function ProfileDashboard({
   activeDraws,
   availableFreeTickets,
   walletRequests,
+  paymentAccounts,
+  ticketPayments,
 }: {
   profile: Profile
   tickets: UserTicket[]
@@ -22,9 +30,10 @@ export function ProfileDashboard({
   activeDraws: Draw[]
   availableFreeTickets: number
   walletRequests: WalletRequest[]
+  paymentAccounts: PaymentAccount[]
+  ticketPayments: TicketPaymentSubmission[]
 }) {
   const [name, setName] = useState(profile.name)
-  const [phone, setPhone] = useState(profile.phone ?? "")
   const [referralUrl, setReferralUrl] = useState("")
   const [selectedDraw, setSelectedDraw] = useState(activeDraws[0]?.id ?? "")
   const [saving, setSaving] = useState(false)
@@ -48,18 +57,11 @@ export function ProfileDashboard({
       setFeedbackKind("error")
       return
     }
-    const digits = phone.replace(/\D/g, "")
-    if (digits.length < 7 || digits.length > 15) {
-      setFeedback("Enter a phone number with 7 to 15 digits.")
-      setFeedbackKind("error")
-      return
-    }
-
     setSaving(true)
     setFeedback("")
     const { error } = await supabase
       .from("profiles")
-      .update({ name: name.trim(), phone: phone.trim() })
+      .update({ name: name.trim() })
       .eq("id", profile.id)
     setSaving(false)
 
@@ -141,13 +143,15 @@ export function ProfileDashboard({
               <label className="field-label" htmlFor="profile-name">Name</label>
               <input className="field-control" id="profile-name" maxLength={80} value={name} onChange={(event) => setName(event.target.value)} required />
             </div>
-            <div>
-              <label className="field-label" htmlFor="profile-phone">Phone number</label>
-              <input className="field-control" id="profile-phone" type="tel" inputMode="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required />
-            </div>
-            <button type="submit" className="secondary-button w-full" disabled={saving}>{saving ? "Saving…" : "Save profile"}</button>
+            <p className="text-xs leading-5 text-muted">Email confirmation: {profile.email_verified_at ? "verified" : "not yet verified"}. Contact details are changed through the verification flow.</p>
+            <button type="submit" className="secondary-button w-full" disabled={saving}>{saving ? "Saving…" : "Save name"}</button>
           </form>
         </section>
+
+        <div className="space-y-4">
+          <PhoneVerification phone={profile.phone} verifiedAt={profile.phone_verified_at} emailVerified={Boolean(profile.email_verified_at)} />
+          <EligibilityForm accepted={Boolean(profile.age_confirmed_at && profile.terms_accepted_at && profile.terms_version === "2026-11-04")} emailVerified={Boolean(profile.email_verified_at)} />
+        </div>
 
         <section className="surface-card p-5 sm:p-6" aria-labelledby="referral-heading">
           <p className="section-eyebrow">Invite & earn</p>
@@ -172,7 +176,7 @@ export function ProfileDashboard({
                 {activeDraws.map((draw) => <option key={draw.id} value={draw.id}>Draw {String(draw.draw_number).padStart(2, "0")} · {draw.title}</option>)}
               </select>
             )}
-            <button type="button" className="primary-button shrink-0" onClick={claimFreeTicket} disabled={claiming || availableFreeTickets <= 0 || activeDraws.length === 0}>
+            <button type="button" className="primary-button shrink-0" onClick={claimFreeTicket} disabled={claiming || availableFreeTickets <= 0 || activeDraws.length === 0 || !profile.phone_verified_at || !profile.age_confirmed_at || profile.terms_version !== "2026-11-04" || profile.account_status !== "active"}>
               <Gift size={16} aria-hidden="true" /> {claiming ? "Claiming…" : availableFreeTickets > 0 ? `Claim free ticket (${availableFreeTickets})` : "Claim free ticket"}
             </button>
           </div>
@@ -181,7 +185,31 @@ export function ProfileDashboard({
         </section>
       </div>
 
-      <WalletPanel balance={profile.balance} phone={profile.phone} requests={walletRequests} />
+      <WalletPanel balance={profile.balance} phone={profile.phone} requests={walletRequests} accounts={paymentAccounts} />
+
+      {ticketPayments.length > 0 && (
+        <section className="surface-card overflow-hidden" aria-labelledby="ticket-payments-heading">
+          <div className="border-b border-line px-5 py-4 sm:px-6">
+            <p className="section-eyebrow">Manual ticket payments</p>
+            <h2 id="ticket-payments-heading" className="mt-1 text-lg font-bold text-ink-strong">Transfer review status</h2>
+          </div>
+          <div className="divide-y divide-line">
+            {ticketPayments.map((payment) => {
+              const draw = one(payment.draws)
+              return (
+                <article key={payment.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
+                  <div>
+                    <p className="font-semibold text-ink-strong">{draw?.title ?? "Draw"} · {payment.quantity} ticket{payment.quantity === 1 ? "" : "s"}</p>
+                    <p className="mt-1 text-xs text-muted">{payment.provider === "jazzcash" ? "JazzCash" : "Easypaisa"} · {formatDate(payment.created_at)} · {formatPkr(payment.amount)}</p>
+                    {payment.admin_note && <p className="mt-2 text-xs text-muted">Admin note: {payment.admin_note}</p>}
+                  </div>
+                  <span className={`status-pill ${payment.status === "approved" ? "status-pill--won" : payment.status === "rejected" ? "status-pill--lost" : "status-pill--pending"}`}>{payment.status === "pending" ? "Awaiting review" : payment.status}</span>
+                </article>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       <section className="surface-card overflow-hidden" aria-labelledby="tickets-heading">
         <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
@@ -197,7 +225,7 @@ export function ProfileDashboard({
               <div key={ticket.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
                 <div>
                   <p className="font-bold text-ink-strong">{ticket.draws?.title ?? "Draw"}</p>
-                  <p className="mt-1 text-xs text-muted">Draw {String(ticket.draws?.draw_number ?? "—").padStart(2, "0")} · Ticket #{ticket.ticket_number} · {ticket.source === "referral" ? "Referral reward" : "Purchased"}</p>
+                  <p className="mt-1 text-xs text-muted">Draw {String(ticket.draws?.draw_number ?? "—").padStart(2, "0")} · Ticket #{ticket.ticket_number} · {ticket.source === "referral" ? "Referral reward" : ticket.source === "manual_payment" ? "Transfer payment" : "Wallet purchase"}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`status-pill ${ticket.status === "won" ? "status-pill--won" : ticket.status === "lost" ? "status-pill--lost" : ""}`}>{ticket.status}</span>

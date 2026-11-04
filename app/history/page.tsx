@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
-import { Award, CalendarDays, TicketCheck } from "lucide-react"
-import { getWinnerHistory } from "@/lib/queries"
-import { formatDate } from "@/lib/format"
+import { Award } from "lucide-react"
+import { DrawVerificationCard } from "@/components/draw-verification"
+import { getDrawVerifications, getPublicDrawPrizes } from "@/lib/queries"
 
 export const metadata: Metadata = {
   title: "Draw history",
@@ -9,36 +9,23 @@ export const metadata: Metadata = {
 }
 
 export default async function HistoryPage() {
-  const winners = await getWinnerHistory()
+  const draws = await getDrawVerifications()
+  const prizes = await getPublicDrawPrizes(draws.map((draw) => draw.id))
+  const prizesByDraw = new Map<string, typeof prizes>()
+  for (const prize of prizes) {
+    prizesByDraw.set(prize.draw_id, [...(prizesByDraw.get(prize.draw_id) ?? []), prize])
+  }
 
   return (
     <div className="page-shell py-9 sm:py-12">
       <div className="mb-8 max-w-2xl">
         <p className="section-eyebrow">Public archive</p>
         <h1 className="section-title mt-2">Recent winners</h1>
-        <p className="mt-3 text-sm leading-6 text-muted">Completed results are published here with the winning ticket number and winner name.</p>
+        <p className="mt-3 text-sm leading-6 text-muted">New draws include masked winners, prize tiers, a committed server seed, and a public randomness pulse. Older archived results are labeled when proof is unavailable.</p>
       </div>
-      {winners.length ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          {winners.map((winner) => (
-            <article key={winner.id} className="surface-card flex items-center gap-4 p-5 sm:p-6">
-              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gold-soft text-[#7a6128]"><Award size={22} aria-hidden="true" /></span>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="status-pill status-pill--won">Draw {String(winner.draw_number).padStart(2, "0")}</span>
-                  <span className="flex items-center gap-1 text-xs text-muted"><CalendarDays size={13} aria-hidden="true" />{formatDate(winner.completed_at)}</span>
-                </div>
-                <h2 className="mt-2 truncate text-base font-bold text-ink-strong">{winner.title}</h2>
-                <p className="mt-1 text-sm text-muted">Winner: <span className="font-semibold text-ink">{winner.winner_name}</span></p>
-                {winner.prize_details && <p className="mt-1 line-clamp-2 text-xs text-muted">{winner.prize_details}</p>}
-              </div>
-              <div className="shrink-0 rounded-xl bg-green-pale px-3 py-2 text-center">
-                <TicketCheck size={15} className="mx-auto text-green" aria-hidden="true" />
-                <span className="mt-1 block text-sm font-extrabold text-green">#{winner.winner_ticket}</span>
-                <span className="text-[0.6rem] font-bold uppercase tracking-wide text-muted">Ticket</span>
-              </div>
-            </article>
-          ))}
+      {draws.length ? (
+        <div className="space-y-4">
+          {draws.map((draw) => <DrawVerificationCard key={draw.id} draw={draw} prizes={prizesByDraw.get(draw.id) ?? []} />)}
         </div>
       ) : (
         <div className="surface-card grid min-h-64 place-items-center p-8 text-center">
