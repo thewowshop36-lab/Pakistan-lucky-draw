@@ -5,11 +5,9 @@ import { useRouter } from "next/navigation"
 import { ArrowDownToLine, ArrowUpFromLine, Check, Copy, Wallet } from "lucide-react"
 import { formatDate, formatPkr } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
-import type { WalletRequest } from "@/lib/types"
+import type { PaymentAccount, PaymentProvider, WalletRequest } from "@/lib/types"
 
-const paymentDestination = "+923134876720"
 type RequestMode = "deposit" | "withdrawal"
-type PaymentProvider = "jazzcash" | "easypaisa"
 type Feedback = { kind: "success" | "error"; text: string }
 
 const statusLabels: Record<WalletRequest["status"], string> = {
@@ -23,10 +21,12 @@ export function WalletPanel({
   balance,
   phone,
   requests,
+  accounts,
 }: {
   balance: number | string
   phone: string | null
   requests: WalletRequest[]
+  accounts: PaymentAccount[]
 }) {
   const [mode, setMode] = useState<RequestMode | null>(null)
   const [provider, setProvider] = useState<PaymentProvider>("jazzcash")
@@ -39,10 +39,12 @@ export function WalletPanel({
   const [attempt, setAttempt] = useState<{ fingerprint: string; key: string } | null>(null)
   const router = useRouter()
   const supabase = createClient()
+  const paymentAccount = accounts.find((account) => account.provider === provider && account.is_active)
 
   async function copyPaymentNumber() {
+    if (!paymentAccount) return
     try {
-      await navigator.clipboard.writeText(paymentDestination)
+      await navigator.clipboard.writeText(paymentAccount.account_identifier)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1800)
     } catch {
@@ -62,6 +64,10 @@ export function WalletPanel({
     }
     if (digits.length < 7 || digits.length > 15) {
       setFeedback({ kind: "error", text: "Enter a transfer phone number with 7 to 15 digits." })
+      return
+    }
+    if (mode === "deposit" && !paymentAccount) {
+      setFeedback({ kind: "error", text: "This transfer method is not configured yet. Choose another method or try later." })
       return
     }
     if (mode === "deposit" && (reference.trim().length < 4 || reference.trim().length > 120)) {
@@ -126,7 +132,7 @@ export function WalletPanel({
         <div>
           <p className="section-eyebrow">JazzCash & Easypaisa</p>
           <h2 id="wallet-actions-heading" className="mt-1 text-lg font-bold text-ink-strong">Deposit or withdraw</h2>
-          <p className="mt-1 max-w-xl text-sm leading-6 text-muted">Requests are reviewed manually. Never share your wallet PIN or one-time password.</p>
+          <p className="mt-1 max-w-xl text-sm leading-6 text-muted">Transfers are reviewed manually. Never share your wallet PIN or one-time password.</p>
         </div>
         <div className="rounded-xl bg-surface-soft px-3.5 py-2.5">
           <p className="text-[0.65rem] font-bold uppercase tracking-wide text-muted">Available balance</p>
@@ -149,16 +155,19 @@ export function WalletPanel({
             {mode === "deposit" ? (
               <div className="rounded-2xl border border-line bg-surface-soft p-4">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted">Send your deposit to</p>
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-bold text-ink-strong">JazzCash / Easypaisa</p>
-                    <p className="mt-1 font-mono text-base font-bold tracking-wide text-green">{paymentDestination}</p>
+                {paymentAccount ? (
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-ink-strong">{paymentAccount.account_title} · {provider === "jazzcash" ? "JazzCash" : "Easypaisa"}</p>
+                      <p className="mt-1 break-all font-mono text-base font-bold tracking-wide text-green">{paymentAccount.account_identifier}</p>
+                      {paymentAccount.instructions && <p className="mt-2 whitespace-pre-line text-xs leading-5 text-muted">{paymentAccount.instructions}</p>}
+                    </div>
+                    <button type="button" className="secondary-button min-h-9 px-3" onClick={() => void copyPaymentNumber()}>
+                      {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+                      {copied ? "Copied" : "Copy number"}
+                    </button>
                   </div>
-                  <button type="button" className="secondary-button min-h-9 px-3" onClick={() => void copyPaymentNumber()}>
-                    {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
-                    {copied ? "Copied" : "Copy number"}
-                  </button>
-                </div>
+                ) : <p className="mt-2 text-sm font-semibold text-muted">No official account is configured for this method yet.</p>}
                 <p className="mt-3 text-xs leading-5 text-muted">Complete the transfer separately, then enter its reference below. Funds are not credited until an admin verifies the transfer.</p>
               </div>
             ) : (
@@ -190,7 +199,7 @@ export function WalletPanel({
             </div>
 
             {feedback && <p className={`rounded-xl px-4 py-3 text-sm ${feedback.kind === "error" ? "bg-[#fbefef] text-[#8d4545]" : "bg-green-pale text-green"}`} role={feedback.kind === "error" ? "alert" : "status"}>{feedback.text}</p>}
-            <button type="submit" className="primary-button" disabled={busy}>
+            <button type="submit" className="primary-button" disabled={busy || (mode === "deposit" && !paymentAccount)}>
               <Wallet size={16} aria-hidden="true" />
               {busy ? "Submitting…" : mode === "deposit" ? "Submit deposit request" : "Submit withdrawal request"}
             </button>

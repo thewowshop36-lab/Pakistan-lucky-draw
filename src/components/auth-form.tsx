@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { ArrowRight, KeyRound, Mail, UserRound } from "lucide-react"
 import { safeInternalPath } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
+import { CURRENT_TERMS_VERSION } from "@/lib/terms"
 
 export function AuthForm({
   mode,
@@ -20,6 +21,8 @@ export function AuthForm({
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [birthDate, setBirthDate] = useState("")
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState("")
   const [isError, setIsError] = useState(false)
@@ -45,6 +48,19 @@ export function AuthForm({
         setIsError(true)
         return
       }
+      const maximumEligibleDate = new Date()
+      maximumEligibleDate.setFullYear(maximumEligibleDate.getFullYear() - 18)
+      const maximumBirthDate = `${maximumEligibleDate.getFullYear()}-${String(maximumEligibleDate.getMonth() + 1).padStart(2, "0")}-${String(maximumEligibleDate.getDate()).padStart(2, "0")}`
+      if (!birthDate || birthDate > maximumBirthDate) {
+        setMessage("You must be at least 18 years old to create an account.")
+        setIsError(true)
+        return
+      }
+      if (!termsAccepted) {
+        setMessage("Accept the terms and privacy policy to continue.")
+        setIsError(true)
+        return
+      }
       if (password.length < 8) {
         setMessage("Use a password with at least 8 characters.")
         setIsError(true)
@@ -60,6 +76,9 @@ export function AuthForm({
           data: {
             name: name.trim(),
             phone: phone.trim(),
+            birth_date: birthDate,
+            accepted_terms: termsAccepted,
+            terms_version: CURRENT_TERMS_VERSION,
             referred_by: referralId || null,
           },
         },
@@ -117,6 +136,15 @@ export function AuthForm({
               <label className="field-label" htmlFor="phone">Phone number</label>
               <input className="field-control" id="phone" name="phone" type="tel" autoComplete="tel" inputMode="tel" placeholder="+92 300 1234567" value={phone} onChange={(event) => setPhone(event.target.value)} required />
             </div>
+            <div>
+              <label className="field-label" htmlFor="birth-date-signup">Date of birth</label>
+              <input className="field-control" id="birth-date-signup" name="birth_date" type="date" value={birthDate} onChange={(event) => setBirthDate(event.target.value)} required />
+              <p className="mt-1.5 text-xs text-muted">You must be 18 or older. The date itself is not stored.</p>
+            </div>
+            <label className="flex items-start gap-3 text-xs leading-5 text-muted">
+              <input className="mt-1 size-4 shrink-0 accent-[#246345]" type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} required />
+              <span>I confirm I am at least 18 and agree to the <Link className="font-bold text-green underline" href="/terms" target="_blank">Terms</Link> and <Link className="font-bold text-green underline" href="/privacy" target="_blank">Privacy Policy</Link>.</span>
+            </label>
           </>
         )}
         <div>

@@ -3,21 +3,23 @@ import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, Check, CircleHelp, Shield
 import { DrawCard } from "@/components/draw-card"
 import { HeroCarousel } from "@/components/hero-carousel"
 import { createClient } from "@/lib/supabase/server"
-import type { Draw, SiteContent } from "@/lib/types"
+import { DRAW_COLUMNS } from "@/lib/queries"
+import type { Draw, DrawPrize, PaymentAccount, SiteContent } from "@/lib/types"
 
 const trustPoints = [
   { icon: TicketCheck, title: "Clear ticket limits", copy: "See the price and available ticket count before entering." },
   { icon: ShieldCheck, title: "Recorded entries", copy: "Confirmed purchases are attached to your account and draw." },
-  { icon: CircleHelp, title: "Public results", copy: "Completed draws and winning ticket numbers stay in the archive." },
+  { icon: CircleHelp, title: "Public results", copy: "Completed results show winning ticket numbers and masked winner names." },
 ]
 
 export default async function HomePage() {
   const supabase = await createClient()
-  const [drawResult, contentResult, authResult] = await Promise.all([
+  const [drawResult, contentResult, authResult, accountResult] = await Promise.all([
     supabase
       .from("draws")
-      .select("id,draw_number,title,description,prize_details,ticket_price,total_tickets,sold_tickets,profit_margin,banner_image_url,status,winner_ticket,winner_user_id,created_at,updated_at,completed_at")
+      .select(DRAW_COLUMNS)
       .eq("status", "active")
+      .or("closed_at.is.null,end_condition.eq.sold_out")
       .order("draw_number", { ascending: true })
       .limit(3),
     supabase
@@ -26,10 +28,19 @@ export default async function HomePage() {
       .order("display_order", { ascending: true })
       .order("updated_at", { ascending: false }),
     supabase.auth.getUser(),
+    supabase.from("payment_accounts").select("provider,account_title,account_identifier,instructions,is_active,updated_at").eq("is_active", true).order("provider"),
   ])
 
   const draws = (drawResult.data ?? []) as unknown as Draw[]
   const content = (contentResult.data ?? []) as unknown as SiteContent[]
+  const accounts = (accountResult.data ?? []) as unknown as PaymentAccount[]
+  const eligibilityResult = authResult.data.user ? await supabase.rpc("current_user_can_enter_draw") : { data: false }
+  const eligible = Boolean(eligibilityResult.data)
+  const prizeResult = draws.length ? await supabase.from("draw_prizes_public").select("draw_id,tier_order,prize_name,prize_description,prize_amount,winner_ticket_number,winner_public_name").in("draw_id", draws.map((draw) => draw.id)).order("tier_order") : { data: [] }
+  const prizesByDraw = new Map<string, DrawPrize[]>()
+  for (const prize of (prizeResult.data ?? []) as unknown as DrawPrize[]) {
+    prizesByDraw.set(prize.draw_id, [...(prizesByDraw.get(prize.draw_id) ?? []), prize])
+  }
   const heroItems = content.filter((item) => item.section_name === "hero_banner" || item.section_name === "videos")
   const guidelines = content.find((item) => item.section_name === "guidelines")
   const trustText = content.find((item) => item.section_name === "trust")
@@ -63,7 +74,7 @@ export default async function HomePage() {
         </div>
         {draws.length ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {draws.map((draw) => <DrawCard key={draw.id} draw={draw} authenticated={authenticated} />)}
+            {draws.map((draw) => <DrawCard key={draw.id} draw={draw} authenticated={authenticated} eligible={eligible} accounts={accounts} prizes={prizesByDraw.get(draw.id) ?? []} />)}
           </div>
         ) : (
           <div className="surface-card flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
@@ -82,7 +93,7 @@ export default async function HomePage() {
           <p className="section-eyebrow">Before you enter</p>
           <h2 id="guidelines-heading" className="section-title mt-2">A simple, transparent process.</h2>
           <p className="mt-4 max-w-md text-sm leading-7 text-muted">
-            {guidelines?.content_text || "Review each draw’s price, ticket limit, and prize details before purchasing. Your ticket appears in your profile after the wallet transaction is confirmed. Completed draws are published in the results archive."}
+            {guidelines?.content_text || "Review each draw’s price, ticket limit, and prize tiers before entering. Ticket numbers appear after a wallet purchase or transfer is confirmed. Completed results include public verification data."}
           </p>
           <Link href="/history" className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-green hover:underline">
             Review past results <ArrowRight size={15} aria-hidden="true" />

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
-import { Search, UserRound, Wallet } from "lucide-react"
+import { Search, ShieldAlert, ShieldCheck, UserRound, Wallet } from "lucide-react"
 import { formatDate, formatPkr } from "@/lib/format"
 import { createClient } from "@/lib/supabase/client"
 import type { Profile, UserTicket } from "@/lib/types"
@@ -78,7 +78,98 @@ function UserWalletAdjustment({ profile }: { profile: Profile }) {
   )
 }
 
-export function UserMonitor({ profiles, tickets }: { profiles: Profile[]; tickets: AdminTicket[] }) {
+function UserStatusControl({ profile, currentUserId }: { profile: Profile; currentUserId: string }) {
+  const [reason, setReason] = useState("")
+  const [suspensionFormOpen, setSuspensionFormOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState("")
+  const router = useRouter()
+  const supabase = createClient()
+
+  async function updateStatus(status: "active" | "suspended") {
+    const trimmedReason = reason.trim()
+    if (busy) return
+    if (status === "suspended" && trimmedReason.length < 3) {
+      setMessage("Add a short reason before suspending this account.")
+      return
+    }
+
+    setBusy(true)
+    setMessage("")
+    try {
+      const { error } = await supabase.rpc("admin_set_user_status", {
+        p_user_id: profile.id,
+        p_status: status,
+        p_reason: trimmedReason,
+      })
+
+      if (error) {
+        const normalizedError = error.message.toLowerCase()
+        if (normalizedError.includes("cannot suspend your own")) {
+          setMessage("You cannot suspend your own administrator account.")
+        } else if (normalizedError.includes("administrator accounts cannot be suspended")) {
+          setMessage("Administrator accounts cannot be suspended here.")
+        } else if (normalizedError.includes("administrator access")) {
+          setMessage("Administrator access could not be verified. Refresh and sign in again.")
+        } else {
+          setMessage("Account status was not changed. Try again.")
+        }
+        return
+      }
+
+      setSuspensionFormOpen(false)
+      setReason("")
+      setMessage(status === "suspended" ? "Account suspended and recorded in the audit log." : "Account reactivated and recorded in the audit log.")
+      router.refresh()
+    } catch {
+      setMessage("Account status could not be updated. Check the connection and try again.")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="mt-4 border-t border-line pt-4">
+      {profile.account_status === "suspended" ? (
+        <button type="button" className="secondary-button min-h-9 px-3" disabled={busy} onClick={() => void updateStatus("active")}>
+          <ShieldCheck size={15} aria-hidden="true" />{busy ? "Updating…" : "Reactivate account"}
+        </button>
+      ) : profile.id === currentUserId ? (
+        <p className="text-xs leading-5 text-muted">Your administrator account is protected from suspension here.</p>
+      ) : suspensionFormOpen ? (
+        <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); void updateStatus("suspended") }}>
+          <div>
+            <label className="field-label" htmlFor={`suspension-reason-${profile.id}`}>Reason for suspension</label>
+            <textarea
+              className="field-control"
+              id={`suspension-reason-${profile.id}`}
+              value={reason}
+              onChange={(event) => { setReason(event.target.value); setMessage("") }}
+              minLength={3}
+              maxLength={500}
+              rows={3}
+              required
+            />
+            <p className="mt-1 text-xs text-muted">This reason is saved to the administrator audit log.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" className="danger-button min-h-9 px-3" disabled={busy || reason.trim().length < 3}>
+              <ShieldAlert size={15} aria-hidden="true" />{busy ? "Suspending…" : "Confirm suspension"}
+            </button>
+            <button type="button" className="secondary-button min-h-9 px-3" disabled={busy} onClick={() => { setSuspensionFormOpen(false); setReason(""); setMessage("") }}>Cancel</button>
+          </div>
+        </form>
+      ) : (
+        <button type="button" className="danger-button min-h-9 px-3" onClick={() => { setSuspensionFormOpen(true); setMessage("") }}>
+          <ShieldAlert size={15} aria-hidden="true" />Suspend account
+        </button>
+      )}
+      {message && <p className="mt-3 rounded-xl bg-surface-soft px-3 py-2 text-xs leading-5 text-muted" role="status">{message}</p>}
+    </div>
+  )
+}
+
+export function UserMonitor({ profiles, tickets, currentUserId }: { profiles: Profile[]; tickets: AdminTicket[]; currentUserId: string }) {
   const [search, setSearch] = useState("")
   const ticketCounts = useMemo(() => {
     const counts = new Map<string, number>()
@@ -109,7 +200,10 @@ export function UserMonitor({ profiles, tickets }: { profiles: Profile[]; ticket
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-green-pale text-green"><UserRound size={18} aria-hidden="true" /></span>
                     <div className="min-w-0">
-                      <h3 className="truncate font-bold text-ink-strong">{profile.name}</h3>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <h3 className="truncate font-bold text-ink-strong">{profile.name}</h3>
+                        <span className={`status-pill ${profile.account_status === "suspended" ? "status-pill--lost" : ""}`}>{profile.account_status === "suspended" ? "Suspended" : "Active"}</span>
+                      </div>
                       <p className="truncate text-xs text-muted">{profile.phone || "No phone number"} · ID {profile.id.slice(0, 8)}</p>
                     </div>
                   </div>
@@ -120,8 +214,27 @@ export function UserMonitor({ profiles, tickets }: { profiles: Profile[]; ticket
                   <div className="rounded-xl bg-surface-soft px-2 py-2"><p className="text-base font-bold text-ink-strong">{profile.free_tickets_earned}</p><p className="text-[0.65rem] text-muted">Free earned</p></div>
                   <div className="rounded-xl bg-surface-soft px-2 py-2"><p className="text-base font-bold text-ink-strong">{ticketCounts.get(profile.id) ?? 0}</p><p className="text-[0.65rem] text-muted">Recent tickets</p></div>
                 </div>
+                <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Account verification status">
+                  {[
+                    { label: "Email", verified: Boolean(profile.email_verified_at) },
+                    { label: "Phone", verified: Boolean(profile.phone_verified_at) },
+                    { label: "Age", verified: Boolean(profile.age_confirmed_at) },
+                    { label: "Terms", verified: Boolean(profile.terms_accepted_at) },
+                  ].map(({ label, verified }) => (
+                    <span key={label} className={`status-pill ${verified ? "" : "status-pill--neutral"}`}>
+                      {label} {verified ? "verified" : "pending"}
+                    </span>
+                  ))}
+                </div>
+                {profile.account_status === "suspended" && (
+                  <p className="mt-3 rounded-xl bg-surface-soft px-3 py-2 text-xs leading-5 text-muted">
+                    <span className="font-semibold text-ink-strong">Suspension reason:</span> {profile.suspension_reason || "No reason recorded"}
+                    {profile.suspended_at ? ` · ${formatDate(profile.suspended_at)}` : ""}
+                  </p>
+                )}
                 <p className="mt-3 text-xs text-muted">Joined {formatDate(profile.created_at)}</p>
                 <UserWalletAdjustment profile={profile} />
+                <UserStatusControl profile={profile} currentUserId={currentUserId} />
               </article>
             ))}
           </div>
